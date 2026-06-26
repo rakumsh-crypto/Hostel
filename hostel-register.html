@@ -1,0 +1,1875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Hostel Register</title>
+<link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjogIkhvc3RlbCBSZWdpc3RlciIsICJzaG9ydF9uYW1lIjogIkhvc3RlbCIsICJzdGFydF91cmwiOiAiLiIsICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLCAiYmFja2dyb3VuZF9jb2xvciI6ICIjRjNGNEY4IiwgInRoZW1lX2NvbG9yIjogIiM0RjQ2RTUiLCAiaWNvbnMiOiBbeyJzcmMiOiAiZGF0YTppbWFnZS9wbmc7YmFzZTY0LGlWQk9SdzBLR2dvQUFBQU5TVWhFVWdBQUFNQUFBQURBQ0FJQUFBRGR2dnRRQUFBQ1MwbEVRVlI0bk8zZE1VckRBQmlHNFZSY0hBcjFSQTVDMTY0ZDlBb0ZDUWdld3NYak9IZ0t3Uk4wYzNCeWNQSU9lWXN4K2p4NzRCdGUvaWtrcTkzMk9NQlVaM01QWU5rRVJDSWdFZ0dSQ0loRVFDUUNJaEVRaVlCSUJFUWlJQklCa1FpSVJFQWtBaUlSRUltQVNBUkVJaUFTQVpFSWlFUkFKQUlpRVJDSmdFZ0VSQ0lnRWdHUkNJaEVRQ1FDSWhFUWlZQklCRVFpSUJJQmtRaUlSRUFrQWlJUkVJbUFTQVJFSWlBU0FaRUlpRVJBSkFJaUVSQ0pnRWdFUkNJZ0VnR1JDSWhFUUNRQ0loRVF5Zm5jQXlhNnVyNjR1NytjOXV6VDQ4Zkw4K2RwOXd6RHNMOWQ3Mi9XMDU1OUdOL2ZYcjlPdStkbnVFQWtBaUlSRUltQVNBUkVJaUFTQVpFSWlFUkFKQUlpRVJDSmdFZ0VSQ0lnRWdHUkNJaEVRQ1FDSWhFUWlZQklCRVFpSUJJQmtRaUlSRUFrQWlJUkVJbUFTSmI2Y1lYaU1HNE80MmJ1RlgrRUMwUWlJQklCa1FpSVJFQWtBaUlSRUltQVNBUkVJaUFTQVpFSWlFUkFKQUlpK1krdmMvekNmMlVzbHd0RUlpQVNBWkVJaUVSQUpBSWlFUkNKZ0VnRVJDSWdFZ0dSQ0loRVFDUUNJaEVRaVlCSUJFUWlJQklCa1FpSVJFQWtBaUlSRUltQVNBUkVJaUFTQVpFSWlFUkFKQUlpRVJDSmdFaFd1KzF4N2cwc21BdEVJaUFTQVpFSWlFUkFKQUlpRVJDSmdFZ0VSQ0lnRWdHUkNJaEVRQ1FDSWhFUWlZQklCRVFpSUJJQmtRaUlSRUFrQWlJUkVJbUFTQVJFSWlBU0FaRUlpRVJBSkFJaUVSQ0pnRWdFUkNJZ0VnR1JDSWhFUUNRQ0loRVFpWUJJQkVRaUlCSUJrUWlJUkVBa0FpSVJFSW1BU0FSRUlpQVNBWkVJaUVSQUpBSWlFUkNKZ0VnRVJQSU5jQ2tZVy9ySHR5Z0FBQUFBU1VWT1JLNUNZSUk9IiwgInNpemVzIjogIjE5MngxOTIiLCAidHlwZSI6ICJpbWFnZS9wbmciLCAicHVycG9zZSI6ICJhbnkifSwgeyJzcmMiOiAiZGF0YTppbWFnZS9wbmc7YmFzZTY0LGlWQk9SdzBLR2dvQUFBQU5TVWhFVWdBQUFnQUFBQUlBQ0FJQUFBQjdHa090QUFBSGdVbEVRVlI0bk8zWG9XMENVQUJGMGRKUVF3aXVHelFkaEFRc0NBYkFzQTAxZEp1U3NBMGVoYTdCWXZuaW5qUEJjemR2c2xsZjN3RG9lUjg5QUlBeEJBQWdTZ0FBb2dRQUlFb0FBS0lFQUNCS0FBQ2lCQUFnU2dBQW9nUUFJRW9BQUtJRUFDQktBQUNpQkFBZ1NnQUFvZ1FBSUVvQUFLSUVBQ0JLQUFDaUJBQWdTZ0FBb2dRQUlFb0FBS0lFQUNCS0FBQ2lCQUFnU2dBQW9nUUFJRW9BQUtJRUFDQktBQUNpQkFBZ1NnQUFvZ1FBSUVvQUFLSUVBQ0JLQUFDaUJBQWdTZ0FBb2dRQUlFb0FBS0lFQUNCS0FBQ2lCQUFnU2dBQW9nUUFJRW9BQUtJRUFDQktBQUNpQkFBZ1NnQUFvZ1FBSUVvQUFLSUVBQ0JLQUFDaUJBQWdTZ0FBb2dRQUlFb0FBS0lFQUNCS0FBQ2lCQUFnU2dBQW9nUUFJRW9BQUtJRUFDQktBQUNpQkFBZ1NnQUFvZ1FBSUVvQUFLSUVBQ0JLQUFDaUJBQWdTZ0FBb2dRQUlFb0FBS0lFQUNCS0FBQ2lCQUFnU2dBQW9nUUFJRW9BQUtJRUFDQktBQUNpQkFBZ1NnQUFvZ1FBSUVvQUFLSUVBQ0JLQUFDaUJBQWdTZ0FBb2dRQUlFb0FBS0lFQUNCS0FBQ2lCQUFnU2dBQW9nUUFJRW9BQUtJRUFDQktBQUNpQkFBZ1NnQUFvZ1FBSUVvQUFLSUVBQ0JLQUFDaUJBQWdTZ0FBb2dRQUlFb0FBS0lFQUNCS0FBQ2lCQUFnU2dBQW9nUUFJRW9BQUtJRUFDQktBQUNpQkFBZ1NnQUFvZ1FBSUVvQUFLSUVBQ0JLQUFDaUJBQWdTZ0FBb2dRQUlFb0FBS0lFQUNCS0FBQ2lCQUFnU2dBQW9nUUFJRW9BQUtJRUFDQktBQUNpQkFBZ1NnQUFvZ1FBSUVvQUFLSUVBQ0JLQUFDaUJBQWdTZ0FBb2dRQUlFb0FBS0lFQUNCS0FBQ2lCQUFnYWpwNkFLL3o5ZjF4L1AwY3ZlS3B5L2wrT3Q1R3IzaUY3VzYrUHl4R3IzanE5SE83L04xSHIrQVZQQUNBS0FFQWlCSUFnQ2dCQUlnU0FJQW9BUUNJRWdDQUtBRUFpQklBZ0NnQkFJZ1NBSUFvQVFDSUVnQ0FLQUVBaUJJQWdDZ0JBSWdTQUlBb0FRQ0lFZ0NBS0FFQWlCSUFnQ2dCQUlnU0FJQW9BUUNJRWdDQUtBRUFpQklBZ0NnQkFJZ1NBSUFvQVFDSUVnQ0FLQUVBaUJJQWdDZ0JBSWdTQUlBb0FRQ0lFZ0NBS0FFQWlCSUFnQ2dCQUlnU0FJQW9BUUNJRWdDQUtBRUFpQklBZ0NnQkFJZ1NBSUFvQVFDSUVnQ0FLQUVBaUJJQWdDZ0JBSWdTQUlBb0FRQ0lFZ0NBS0FFQWlCSUFnQ2dCQUlnU0FJQW9BUUNJRWdDQUtBRUFpQklBZ0NnQkFJZ1NBSUFvQVFDSUVnQ0FLQUVBaUJJQWdDZ0JBSWdTQUlBb0FRQ0lFZ0NBS0FFQWlCSUFnQ2dCQUlnU0FJQ282ZWdCOExCY3paYXIyZWdWRU9JQkFFUUpBRUNVQUFCRUNRQkFsQUFBUkFrQVFKUUFBRVFKQUVDVUFBQkVDUUJBbEFBQVJBa0FRSlFBQUVRSkFFQ1VBQUJFQ1FCQWxBQUFSQWtBUUpRQUFFUUpBRUNVQUFCRUNRQkFsQUFBUkFrQVFKUUFBRVFKQUVDVUFBQkVDUUJBbEFBQVJBa0FRSlFBQUVRSkFFQ1VBQUJFQ1FCQWxBQUFSQWtBUUpRQUFFUUpBRUNVQUFCRVRVY1BnSWZMK1g0NjNrYXZlSVh0YnI0L0xFYXZBQThBb0VvQUFLSUVBQ0JLQUFDaUJBQWdTZ0FBb2dRQUlFb0FBS0lFQUNCS0FBQ2lCQUFnU2dBQW9nUUFJRW9BQUtJRUFDQktBQUNpQkFBZ1NnQUFvZ1FBSUVvQUFLSUVBQ0JLQUFDaUJBQWdTZ0FBb2dRQUlFb0FBS0lFQUNCS0FBQ2lCQUFnU2dBQW9nUUFJRW9BQUtJRUFDQktBQUNpQkFBZ1NnQUFvZ1FBSUVvQUFLSUVBQ0JLQUFDaUJBQWdTZ0FBb2dRQUlFb0FBS0lFQUNCS0FBQ2lCQUFnU2dBQW9nUUFJRW9BQUtJRUFDQktBQUNpQkFBZ1NnQUFvZ1FBSUVvQUFLSUVBQ0JLQUFDaUJBQWdTZ0FBb2dRQUlFb0FBS0lFQUNCS0FBQ2lCQUFnU2dBQW9nUUFJRW9BQUtJRUFDQktBQUNpQkFBZ1NnQUFvZ1FBSUVvQUFLSUVBQ0JLQUFDaUJBQWdTZ0FBb2dRQUlFb0FBS0lFQUNCS0FBQ2lCQUFnU2dBQW9nUUFJRW9BQUtJbW0vVjE5QVlBQnZBQUFLSUVBQ0JLQUFDaUJBQWdTZ0FBb2dRQUlFb0FBS0lFQUNCS0FBQ2lCQUFnU2dBQW9nUUFJRW9BQUtJRUFDQktBQUNpQkFBZ1NnQUFvZ1FBSUVvQUFLSUVBQ0JLQUFDaUJBQWdTZ0FBb2dRQUlFb0FBS0lFQUNCS0FBQ2lCQUFnU2dBQW9nUUFJRW9BQUtJRUFDQktBQUNpQkFBZ1NnQUFvZ1FBSUVvQUFLSUVBQ0JLQUFDaUJBQWdTZ0FBb2dRQUlFb0FBS0lFQUNCS0FBQ2lCQUFnU2dBQW9nUUFJRW9BQUtJRUFDQktBQUNpQkFBZ1NnQUFvZ1FBSUVvQUFLSUVBQ0JLQUFDaUJBQWdTZ0FBb2dRQUlFb0FBS0lFQUNCS0FBQ2lCQUFnU2dBQW9nUUFJRW9BQUtJRUFDQktBQUNpQkFBZ1NnQUFvZ1FBSUVvQUFLSUVBQ0JLQUFDaUJBQWdTZ0FBb2dRQUlFb0FBS0lFQUNCS0FBQ2lCQUFnU2dBQW9nUUFJRW9BQUtJRUFDQktBQUNpQkFBZ1NnQUFvZ1FBSUVvQUFLSUVBQ0JLQUFDaUJBQWdTZ0FBb2dRQUlFb0FBS0lFQUNCS0FBQ2lCQUFnU2dBQW9nUUFJRW9BQUtJRUFDQktBQUNpQkFBZ1NnQUFvZ1FBSUVvQUFLSUVBQ0JLQUFDaUJBQWdTZ0FBb2dRQUlFb0FBS0lFQUNCS0FBQ2lCQUFnU2dBQW9nUUFJRW9BQUtJRUFDQktBQUNpQkFBZ1NnQUFvZ1FBSUVvQUFLSUVBQ0JLQUFDaUJBQWdTZ0FBb2dRQUlFb0FBS0lFQUNCS0FBQ2lCQUFnU2dBQW9nUUFJRW9BQUtJRUFDQktBQUNpQkFBZ1NnQUFvZ1FBSUVvQUFLSUVBQ0JLQUFDaUJBQWdTZ0FBb2dRQUlFb0FBS0lFQUNCS0FBQ2kvZ0g5UFJvYmlRQnRzUUFBQUFCSlJVNUVya0pnZ2c9PSIsICJzaXplcyI6ICI1MTJ4NTEyIiwgInR5cGUiOiAiaW1hZ2UvcG5nIiwgInB1cnBvc2UiOiAiYW55In1dfQ==" />
+<link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAIAAADdvvtQAAACS0lEQVR4nO3dMUrDABiG4VRcHAr1RA5C164d9AoFCQgewsXjOHgKwRN0c3BycPIOeYsx+jx74Bte/ikkq932OMBUZ3MPYNkERCIgEgGRCIhEQCQCIhEQiYBIBEQiIBIBkQiIREAkAiIREImASAREIiASAZEIiERAJAIiERCJgEgERCIgEgGRCIhEQCQCIhEQiYBIBEQiIBIBkQiIREAkAiIREImASAREIiASAZEIiERAJAIiERCJgEgERCIgEgGRCIhEQCQCIhEQyfncAya6ur64u7+c9uzT48fL8+dp9wzDsL9d72/W0559GN/fXr9Ou+dnuEAkAiIREImASAREIiASAZEIiERAJAIiERCJgEgERCIgEgGRCIhEQCQCIhEQiYBIBEQiIBIBkQiIREAkAiIREImASJb6cYXiMG4O42buFX+EC0QiIBIBkQiIREAkAiIREImASAREIiASAZEIiERAJAIi+Y+vc/zCf2UslwtEIiASAZEIiERAJAIiERCJgEgERCIgEgGRCIhEQCQCIhEQiYBIBEQiIBIBkQiIREAkAiIREImASAREIiASAZEIiERAJAIiERCJgEhWu+1x7g0smAtEIiASAZEIiERAJAIiERCJgEgERCIgEgGRCIhEQCQCIhEQiYBIBEQiIBIBkQiIREAkAiIREImASAREIiASAZEIiERAJAIiERCJgEgERCIgEgGRCIhEQCQCIhEQiYBIBEQiIBIBkQiIREAkAiIREImASAREIiASAZEIiERAJAIiERCJgEgERPINcCkYW/rHtygAAAAASUVORK5CYII=" />
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAIAAADdvvtQAAACS0lEQVR4nO3dMUrDABiG4VRcHAr1RA5C164d9AoFCQgewsXjOHgKwRN0c3BycPIOeYsx+jx74Bte/ikkq932OMBUZ3MPYNkERCIgEgGRCIhEQCQCIhEQiYBIBEQiIBIBkQiIREAkAiIREImASAREIiASAZEIiERAJAIiERCJgEgERCIgEgGRCIhEQCQCIhEQiYBIBEQiIBIBkQiIREAkAiIREImASAREIiASAZEIiERAJAIiERCJgEgERCIgEgGRCIhEQCQCIhEQyfncAya6ur64u7+c9uzT48fL8+dp9wzDsL9d72/W0559GN/fXr9Ou+dnuEAkAiIREImASAREIiASAZEIiERAJAIiERCJgEgERCIgEgGRCIhEQCQCIhEQiYBIBEQiIBIBkQiIREAkAiIREImASJb6cYXiMG4O42buFX+EC0QiIBIBkQiIREAkAiIREImASAREIiASAZEIiERAJAIi+Y+vc/zCf2UslwtEIiASAZEIiERAJAIiERCJgEgERCIgEgGRCIhEQCQCIhEQiYBIBEQiIBIBkQiIREAkAiIREImASAREIiASAZEIiERAJAIiERCJgEhWu+1x7g0smAtEIiASAZEIiERAJAIiERCJgEgERCIgEgGRCIhEQCQCIhEQiYBIBEQiIBIBkQiIREAkAiIREImASAREIiASAZEIiERAJAIiERCJgEgERCIgEgGRCIhEQCQCIhEQiYBIBEQiIBIBkQiIREAkAiIREImASAREIiASAZEIiERAJAIiERCJgEgERPINcCkYW/rHtygAAAAASUVORK5CYII=" />
+<meta name="theme-color" content="#4F46E5" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Hostel Register" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<style>
+:root{
+  --bg:#F3F4F8; --surface:#FFFFFF; --ink:#1E2230; --ink-soft:#666B7A; --border:#E4E6EE;
+  --primary:#4F46E5; --primary-dark:#4338CA; --primary-soft:#EEF0FF;
+  --green:#1F9D6F; --green-soft:#E6F6EF; --red:#E0483E; --red-soft:#FDECEA;
+  --amber:#C9810A; --amber-soft:#FBF1DE;
+  --radius:16px; --radius-sm:11px;
+  --shadow:0 1px 2px rgba(16,24,40,0.04), 0 6px 16px rgba(16,24,40,0.06);
+  --font-display:'IBM Plex Sans',-apple-system,sans-serif;
+  --font-body:'IBM Plex Sans',-apple-system,sans-serif;
+  --font-mono:'IBM Plex Mono','Courier New',monospace;
+  --input-bg:#FAFBFD;
+}
+[data-theme="dark"]{
+  --bg:#13151F; --surface:#1B1E2B; --ink:#EDEEF5; --ink-soft:#9AA0B4; --border:#2A2E40;
+  --primary:#7C7AFF; --primary-dark:#9290FF; --primary-soft:#272650;
+  --green:#3DCB8F; --green-soft:#163428; --red:#FF6B61; --red-soft:#3A1E1E;
+  --amber:#E0A53D; --amber-soft:#3A2E12;
+  --shadow:0 1px 2px rgba(0,0,0,0.3), 0 6px 18px rgba(0,0,0,0.35);
+  --input-bg:#22253A;
+}
+[data-theme="dark"] body{ background:var(--bg); }
+[data-theme="dark"] .login-card input,
+[data-theme="dark"] .form-grid input, [data-theme="dark"] .form-grid select, [data-theme="dark"] .form-grid textarea{
+  background:var(--input-bg); color:var(--ink); border-color:var(--border);
+}
+[data-theme="dark"] .id-card{ color:#1E2230; } /* printed ID cards stay light/printable regardless of theme */
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{font-family:var(--font-body); color:var(--ink); background:var(--bg); min-height:100vh;}
+button,input,select,textarea{font-family:inherit; font-size:14px;}
+h1,h2,h3,h4{font-family:var(--font-display); font-weight:700; margin:0 0 .4em 0; color:var(--ink);}
+.mono{font-family:var(--font-mono);}
+.muted{color:var(--ink-soft); font-size:13px;}
+a{color:var(--primary);}
+
+.login-screen{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;}
+.login-card{background:var(--surface); border:1px solid var(--border); border-radius:20px; box-shadow:var(--shadow); padding:38px 34px; width:100%; max-width:420px;}
+.brand{display:flex; align-items:center; gap:12px;}
+.brand-center{justify-content:center; flex-direction:column; text-align:center; margin-bottom:8px;}
+.brand-mark{width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,var(--primary),var(--primary-dark)); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:19px; flex-shrink:0; box-shadow:0 4px 10px rgba(79,70,229,.3);}
+.brand-text{font-weight:800; font-size:19px; line-height:1.15;}
+.login-tagline{text-align:center; color:var(--ink-soft); font-size:13px; margin:0 0 24px;}
+.login-card label{display:block; font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em; margin-bottom:16px;}
+.login-card input{width:100%; margin-top:6px; padding:11px 12px; border:1.5px solid var(--border); border-radius:10px; background:var(--input-bg); outline:none; font-size:15px; color:var(--ink);}
+.login-card input:focus{border-color:var(--primary); background:#fff;}
+.login-error{background:var(--red-soft); color:var(--red); border:1px solid #F6CFCB; border-radius:10px; padding:10px 12px; font-size:13px; margin-bottom:16px;}
+.login-hint{font-size:12px; color:var(--ink-soft); margin-top:16px; text-align:center; line-height:1.5;}
+.loading-screen{min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; color:var(--ink-soft);}
+.loading-mark{width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));}
+.fatal-error{max-width:480px; margin:80px auto; text-align:center; padding:24px;}
+.setup-note{background:var(--primary-soft); border:1px solid #D9D6FB; border-radius:10px; padding:10px 12px; font-size:12.5px; color:#41399A; line-height:1.5; margin-bottom:18px;}
+
+.btn{border:none; border-radius:10px; padding:10px 17px; font-size:14px; font-weight:600; cursor:pointer; transition:transform .05s ease, opacity .15s ease, background .15s ease, color .15s ease, border-color .15s ease, box-shadow .15s ease;}
+.btn:active{transform:translateY(1px);}
+.btn:disabled{opacity:.55; cursor:default;}
+.btn-primary{background:var(--primary); color:#fff; box-shadow:0 2px 8px rgba(79,70,229,.25);}
+.btn-primary:hover{background:var(--primary-dark);}
+.btn-secondary{background:#fff; color:var(--ink); border:1.5px solid var(--border);}
+.btn-secondary:hover{border-color:var(--primary); color:var(--primary);}
+.btn-ghost{background:transparent; color:var(--ink-soft); border:1px solid transparent;}
+.btn-ghost:hover{color:var(--ink); background:#EEF0F4;}
+.btn-danger{background:var(--red); color:#fff;}
+.btn-amber{background:var(--amber); color:#fff;}
+.btn-block{width:100%;}
+.btn-lg{padding:14px 26px; font-size:16px;}
+.btn-sm{padding:6px 11px; font-size:12.5px; border-radius:8px;}
+.link-btn{background:none; border:none; color:var(--primary); font-size:13px; cursor:pointer; padding:0; font-weight:600;}
+
+.app-shell{display:flex; min-height:100vh;}
+.sidebar{width:212px; flex-shrink:0; background:var(--ink); color:#fff; display:flex; flex-direction:column; padding:20px 0;}
+.sidebar .brand{padding:0 20px 20px; color:#fff;}
+.sidebar .brand-text{color:#fff;}
+.nav-item{display:flex; align-items:center; justify-content:space-between; width:100%; text-align:left; background:none; border:none; color:#A6ACC2; padding:11px 20px; font-size:14px; cursor:pointer; border-left:3px solid transparent; font-weight:500;}
+.nav-item:hover{color:#fff; background:rgba(255,255,255,.05);}
+.nav-item.active{color:#fff; background:rgba(255,255,255,.08); border-left-color:var(--primary); font-weight:700;}
+.nav-badge{background:var(--red); color:#fff; font-size:10px; font-weight:800; border-radius:20px; padding:2px 7px;}
+.main-col{flex:1; min-width:0; display:flex; flex-direction:column;}
+.topbar{display:flex; align-items:center; justify-content:space-between; background:var(--surface); border-bottom:1px solid var(--border); padding:16px 26px; flex-wrap:wrap; gap:8px;}
+.topbar-title{font-size:19px; font-weight:800;}
+.topbar-user{display:flex; align-items:center; gap:11px; font-size:13px; flex-wrap:wrap;}
+.role-badge{font-size:10px; text-transform:uppercase; letter-spacing:.05em; padding:4px 9px; border-radius:20px; font-weight:700;}
+.role-admin{background:var(--primary-soft); color:var(--primary-dark);}
+.role-accountant{background:var(--green-soft); color:var(--green);}
+.role-gatekeeper{background:var(--amber-soft); color:var(--amber);}
+.user-name{font-weight:700;}
+.account-icon-btn{width:30px; height:30px; border-radius:50%; border:1px solid var(--border); background:#fff; cursor:pointer; font-size:14px; line-height:1;}
+.account-icon-btn:hover{border-color:var(--primary); color:var(--primary);}
+.main{padding:26px; overflow-y:auto;}
+@media (max-width:760px){
+  .app-shell{flex-direction:column;}
+  .sidebar{width:100%; flex-direction:row; overflow-x:auto; padding:8px;}
+  .sidebar .brand{display:none;}
+  .nav-item{flex:0 0 auto; border-left:none; border-bottom:3px solid transparent; white-space:nowrap;}
+  .nav-item.active{border-left:none; border-bottom-color:var(--primary);}
+  .topbar{padding:14px 16px;}
+  .main{padding:16px;}
+}
+
+.acc-shell{display:flex; flex-direction:column; min-height:100vh;}
+.acc-tabs{display:flex; gap:4px; padding:0 26px; background:var(--surface); border-bottom:1px solid var(--border); overflow-x:auto;}
+.tab-btn{background:none; border:none; padding:13px 16px; font-size:13.5px; color:var(--ink-soft); cursor:pointer; border-bottom:3px solid transparent; white-space:nowrap; font-weight:600;}
+.tab-btn.active{color:var(--primary); border-bottom-color:var(--primary);}
+.acc-main{max-width:640px; margin:0 auto; width:100%;}
+@media (max-width:600px){
+  .acc-tabs{position:fixed; bottom:0; left:0; right:0; padding:4px 6px; justify-content:space-around; box-shadow:0 -4px 16px rgba(16,24,40,.08); z-index:30; background:var(--surface);}
+  .tab-btn{flex:1; padding:10px 2px; text-align:center;}
+  .acc-main{padding-bottom:64px;}
+}
+
+.stat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:18px;}
+.stat-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow);}
+.stat-num{font-family:var(--font-mono); font-size:24px; font-weight:700; color:var(--ink);}
+.stat-due .stat-num{color:var(--red);}
+.stat-out .stat-num{color:var(--amber);}
+.stat-label{font-size:12px; color:var(--ink-soft); margin-top:4px; text-transform:uppercase; letter-spacing:.03em; font-weight:600;}
+.card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:22px; box-shadow:var(--shadow);}
+.card.no-pad{padding:0; overflow:hidden;}
+@media (max-width:760px){ .stat-grid{grid-template-columns:1fr 1fr;} }
+
+.toolbar{display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:18px; flex-wrap:wrap;}
+.toolbar-actions{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+.search-input{flex:1; min-width:200px; padding:10px 14px; border:1.5px solid var(--border); border-radius:10px; background:var(--surface);}
+.select-sm{padding:9px 10px; border:1.5px solid var(--border); border-radius:9px; background:var(--surface); font-size:13px;}
+.date-input{padding:9px 10px; border:1.5px solid var(--border); border-radius:9px; background:var(--surface); font-size:13px;}
+.segmented{display:inline-flex; background:#EAEBF1; border-radius:10px; padding:3px; gap:2px;}
+.segmented button{background:none; border:none; padding:7px 14px; border-radius:8px; font-size:13px; font-weight:600; color:var(--ink-soft); cursor:pointer;}
+.segmented button.active{background:#fff; color:var(--ink); box-shadow:var(--shadow);}
+
+.table{width:100%; border-collapse:collapse;}
+.table th{text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); padding:11px 18px; border-bottom:1px solid var(--border); background:#FAFAFD;}
+.table td{padding:12px 18px; border-bottom:1px solid var(--border); font-size:14px; vertical-align:middle;}
+.table tr:last-child td{border-bottom:none;}
+.text-due{color:var(--red); font-weight:700;}
+.text-paid{color:var(--green); font-weight:700;}
+.text-out{color:var(--amber); font-weight:700;}
+.row-actions{display:flex; gap:6px; white-space:nowrap;}
+.icon-btn{background:#fff; border:1px solid var(--border); border-radius:8px; padding:6px 10px; font-size:12px; cursor:pointer; color:var(--ink-soft); font-weight:600;}
+.icon-btn:hover{border-color:var(--primary); color:var(--primary);}
+.icon-danger:hover{border-color:var(--red); color:var(--red);}
+.empty-hint{color:var(--ink-soft); text-align:center; padding:32px 16px;}
+.badge{font-size:11px; padding:4px 10px; border-radius:20px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; display:inline-block;}
+.badge-scan{background:#E3ECF9; color:#3D6B9C;}
+.badge-payment{background:var(--green-soft); color:var(--green);}
+.badge-student_add,.badge-student_edit{background:var(--primary-soft); color:var(--primary-dark);}
+.badge-student_archive,.badge-student_purge{background:var(--red-soft); color:var(--red);}
+.badge-student_restore{background:var(--green-soft); color:var(--green);}
+.badge-leave_granted,.badge-leave_out,.badge-leave_in{background:var(--amber-soft); color:var(--amber);}
+.badge-approved{background:var(--amber-soft); color:var(--amber);}
+.badge-out{background:#FDECEA; color:var(--red);}
+.badge-completed{background:var(--green-soft); color:var(--green);}
+.badge-cancelled{background:#EEE; color:var(--ink-soft);}
+.inline-edit{border:1px solid transparent; background:transparent; padding:6px 7px; border-radius:7px; width:100%;}
+.inline-edit:hover, .inline-edit:focus{border-color:var(--border); background:#FAFAFD;}
+.perm-checks{display:flex; gap:10px; font-size:11.5px; color:var(--ink-soft); flex-wrap:wrap;}
+.perm-checks label{display:flex; align-items:center; gap:4px; text-transform:none; font-weight:500;}
+
+.student-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:14px;}
+.student-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow); cursor:pointer; transition:transform .12s ease, box-shadow .12s ease; display:flex; flex-direction:column; gap:10px;}
+.student-card:hover{transform:translateY(-2px); box-shadow:0 4px 18px rgba(16,24,40,.12);}
+.student-card-top{display:flex; align-items:center; gap:12px;}
+.sc-avatar{width:52px; height:52px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:17px; flex-shrink:0; overflow:hidden;}
+.sc-avatar img{width:100%; height:100%; object-fit:cover;}
+.sc-name{font-weight:700; font-size:15px; line-height:1.25;}
+.sc-roll{font-family:var(--font-mono); font-size:12px; color:var(--ink-soft);}
+.sc-meta{font-size:12.5px; color:var(--ink-soft); display:flex; justify-content:space-between; align-items:center;}
+.sc-actions{display:flex; gap:6px; margin-top:2px; flex-wrap:wrap;}
+.out-pill{display:inline-flex; align-items:center; gap:4px; background:var(--amber-soft); color:var(--amber); font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:20px; text-transform:uppercase;}
+.pay-pill{background:var(--red-soft); color:var(--red); width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; margin-left:auto;}
+.paid-tick{background:var(--green-soft); color:var(--green); width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; margin-left:auto;}
+
+.modal-overlay{position:fixed; inset:0; background:rgba(20,22,35,.5); display:flex; align-items:center; justify-content:center; padding:16px; z-index:50;}
+.modal{background:var(--surface); border-radius:18px; padding:28px; width:100%; max-width:440px; max-height:90vh; overflow-y:auto; box-shadow:0 16px 48px rgba(0,0,0,.25);}
+.modal-lg{max-width:640px;}
+.modal-sm{max-width:340px;}
+.modal h3{margin-bottom:18px;}
+.modal h4{margin:16px 0 8px; font-size:14px;}
+.form-grid{display:grid; gap:14px; margin-bottom:6px;}
+.form-grid.two-col{grid-template-columns:1fr 1fr;}
+.form-grid label{display:block; font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.03em; font-weight:600;}
+.form-grid input, .form-grid select, .form-grid textarea{width:100%; margin-top:5px; padding:10px 11px; border:1.5px solid var(--border); border-radius:9px; font-size:14px; background:var(--input-bg);}
+.form-grid input:focus, .form-grid select:focus, .form-grid textarea:focus{border-color:var(--primary); background:#fff; outline:none;}
+.modal-actions{display:flex; justify-content:flex-end; gap:8px; margin-top:20px;}
+.csv-textarea{width:100%; font-family:var(--font-mono); font-size:12px; padding:10px; border:1.5px solid var(--border); border-radius:9px; margin-top:10px; resize:vertical;}
+.photo-row{display:flex; align-items:center; gap:16px; margin-bottom:8px;}
+.photo-preview{width:72px; height:72px; border-radius:14px; background:var(--primary-soft); display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0; border:1px solid var(--border); font-weight:700; color:var(--primary-dark);}
+.photo-preview img{width:100%; height:100%; object-fit:cover; display:block;}
+.contact-row{display:flex; gap:8px; align-items:center; margin-bottom:8px;}
+.contact-row input{margin-top:0 !important;}
+.contact-row input.label-input{flex:0 0 38%;}
+.contact-row input.phone-input{flex:1;}
+.section-divider{border:none; border-top:1px solid var(--border); margin:18px 0;}
+
+.profile-head{display:flex; align-items:center; gap:18px; margin-bottom:20px;}
+.profile-photo{width:96px; height:96px; border-radius:20px; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:30px; flex-shrink:0; overflow:hidden; box-shadow:0 4px 14px rgba(16,24,40,.15);}
+.profile-photo img{width:100%; height:100%; object-fit:cover;}
+.profile-name{font-size:21px; font-weight:800;}
+.profile-roll{color:var(--ink-soft); font-size:13px; font-family:var(--font-mono); margin-top:2px;}
+.profile-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:18px;}
+.profile-grid .muted{display:block; font-size:11px; text-transform:uppercase; letter-spacing:.03em; margin-bottom:3px; font-weight:600;}
+.profile-section-title{font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--ink-soft); margin:18px 0 8px;}
+.contact-chip{display:inline-flex; align-items:center; gap:6px; background:#FAFAFD; border:1px solid var(--border); border-radius:20px; padding:6px 12px; font-size:13px; margin:0 6px 6px 0;}
+.contact-chip .chip-label{color:var(--ink-soft); font-size:11px; text-transform:uppercase;}
+.profile-qr-row{display:flex; align-items:center; gap:18px; margin:16px 0; flex-wrap:wrap;}
+.qr-actions{display:flex; flex-direction:column; gap:8px;}
+.profile-actions{display:flex; gap:8px; flex-wrap:wrap; margin-top:18px;}
+
+.scan-panel{max-width:480px; margin:0 auto; text-align:center;}
+.scan-idle{padding-top:24px;}
+.scan-hero{margin-bottom:28px;}
+.scan-hero-icon{font-size:40px; margin-bottom:10px;}
+.scan-frame{position:relative; width:100%; max-width:320px; margin:0 auto 16px; aspect-ratio:1/1; background:#0B0C14; border-radius:18px; overflow:hidden;}
+#qr-reader{width:100%; height:100%;}
+.frame-corners{position:absolute; inset:14px; border:2px solid rgba(255,255,255,.65); border-radius:12px; pointer-events:none;}
+.manual-entry{margin-top:24px; text-align:left;}
+.manual-row{display:flex; gap:8px; flex-wrap:wrap;}
+.manual-input{flex:1; min-width:160px; padding:11px 13px; border:1.5px solid var(--border); border-radius:10px;}
+.result-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:26px; box-shadow:var(--shadow); text-align:left;}
+.result-error{text-align:center;}
+.pay-form{border-top:1px dashed var(--border); padding-top:16px; margin:18px 0;}
+
+.stamp{display:inline-flex; align-items:center; gap:6px; background:var(--green-soft); color:var(--green); border-radius:50px; padding:7px 16px; font-weight:800; letter-spacing:.5px; margin-bottom:16px; font-size:13px;}
+.stamp-error{background:var(--red-soft); color:var(--red);}
+.stamp-amber{background:var(--amber-soft); color:var(--amber);}
+
+.toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff; padding:12px 22px; border-radius:10px; font-size:14px; box-shadow:0 8px 24px rgba(0,0,0,.3); z-index:100; max-width:90vw;}
+.toast-error{background:var(--red);}
+.toast-success{background:var(--green);}
+
+/* ---------- Lightbox (click-to-enlarge photo) ---------- */
+.lightbox-overlay{position:fixed; inset:0; background:rgba(10,10,18,.88); display:flex; align-items:center; justify-content:center; z-index:80; padding:24px;}
+.lightbox-img{max-width:92vw; max-height:88vh; border-radius:18px; box-shadow:0 24px 70px rgba(0,0,0,.55); object-fit:contain;}
+.lightbox-close{position:absolute; top:20px; right:22px; width:42px; height:42px; border-radius:50%; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.25); color:#fff; font-size:18px; cursor:pointer;}
+.lightbox-close:hover{background:rgba(255,255,255,.24);}
+
+/* ---------- Design polish (static — no entrance animations, which replay on every re-render) ---------- */
+.login-screen{background:radial-gradient(circle at 15% 10%, rgba(79,70,229,.10), transparent 45%), radial-gradient(circle at 85% 90%, rgba(31,157,111,.08), transparent 45%), var(--bg);}
+.sidebar{background:linear-gradient(180deg, var(--ink) 0%, #161925 100%);}
+.stat-card{position:relative; overflow:hidden;}
+.stat-card::before{content:''; position:absolute; top:0; left:0; width:3px; height:100%; background:var(--primary); opacity:.5;}
+.stat-due::before{background:var(--red);}
+.stat-out::before{background:var(--amber);}
+.stat-card:hover{box-shadow:0 4px 18px rgba(16,24,40,.1); transform:translateY(-1px); transition:transform .15s ease, box-shadow .15s ease;}
+.btn-primary, .btn-secondary{transition:transform .08s ease, box-shadow .15s ease, background .15s ease, color .15s ease, border-color .15s ease;}
+.profile-photo, .gate-photo-holder{cursor:pointer;}
+.profile-photo:hover{opacity:.9;}
+
+#print-area{display:none;}
+.id-cards-grid{display:flex; flex-wrap:wrap; gap:0;}
+.id-card{width:330px; border:1.5px solid var(--ink); border-radius:12px; padding:16px; margin:6px; font-family:var(--font-body);}
+.id-card-head{font-family:var(--font-mono); font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft); border-bottom:1px dashed var(--border); padding-bottom:6px; margin-bottom:10px;}
+.id-card-body{display:flex; gap:14px; align-items:center;}
+.id-qr canvas, .id-qr img{display:block;}
+.id-info .id-name{font-weight:700; font-size:16px;}
+.id-info .id-roll{font-family:var(--font-mono); font-size:13px; color:var(--primary); margin-top:2px;}
+.id-info .id-meta{font-size:12px; color:var(--ink-soft); margin-top:3px;}
+@media print{
+  body *{visibility:hidden;}
+  #print-area, #print-area *{visibility:visible;}
+  #print-area{display:block; position:absolute; top:0; left:0; width:100%;}
+  .id-card{break-inside:avoid;}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="print-area"></div>
+
+<script>
+/* ============================================================
+   SUPABASE CONNECTION — fill these in once and re-upload the file.
+   When both are filled in, EVERY browser/device that opens this
+   file connects immediately — no setup screen, nothing to re-enter.
+   Find these in Supabase: Project Settings → API.
+   Leave both as '' to use the in-app setup screen instead
+   (which remembers the connection per-browser via localStorage).
+   ============================================================ */
+const HARDCODED_SUPABASE_URL = 'https://dthsknsixkyyrkvfvtzi.supabase.co';
+const HARDCODED_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0aHNrbnNpeGt5eXJrdmZ2dHppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNjUyMDcsImV4cCI6MjA5Nzg0MTIwN30.gPmmlpdlxVc-FI7FrcBmkEPCE-ASS6-2Y-9_Q3mPpYA';
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let state = {
+  view:'loading', sbUrl:null, sbAnonKey:null, user:null,
+  students:[], accounts:[], activity:[], leaves:[], batches:[],
+  studentsView:'active', sortBy:'name', duesFilter:'all',
+  adminTab:'dashboard', accTab:'scan', gateTab:'gate',
+  search:'', modal:null, scanResult:null, gateResult:null, scanning:false,
+  toast:null, loginError:null, setupError:null,
+  leaveDateFrom:null, leaveDateTo:null, txnDateFrom:null, txnDateTo:null,
+  myTxnDateFrom:null, myTxnDateTo:null,
+  loginRequests:[], myLoginRequestId:null,
+  theme:'light'
+};
+let session = null;
+let html5QrCode = null;
+let pendingConfirmCallback = null;
+let approvalPollInterval = null;
+
+/* ============================================================
+   STORAGE LAYER (Claude artifact storage when previewing inside
+   Claude.ai, otherwise localStorage for normal hosting)
+   ============================================================ */
+const hasClaudeStorage = (typeof window.storage !== 'undefined' && window.storage !== null);
+async function storageGet(key, shared){
+  if (hasClaudeStorage){ try{ const res = await window.storage.get(key, shared); return res ? res.value : null; }catch(e){ return null; } }
+  try{ return localStorage.getItem(key); }catch(e){ return null; }
+}
+async function storageSet(key, value, shared){
+  if (hasClaudeStorage){ try{ await window.storage.set(key, value, shared); }catch(e){} return; }
+  try{ localStorage.setItem(key, value); }catch(e){}
+}
+async function storageDelete(key, shared){
+  if (hasClaudeStorage){ try{ await window.storage.delete(key, shared); }catch(e){} return; }
+  try{ localStorage.removeItem(key); }catch(e){}
+}
+
+/* ============================================================
+   SUPABASE REST HELPERS
+   ============================================================ */
+async function sbSignIn(email, password){
+  const res = await fetch(`${state.sbUrl}/auth/v1/token?grant_type=password`, { method:'POST', headers:{ apikey:state.sbAnonKey, 'Content-Type':'application/json' }, body: JSON.stringify({ email, password }) });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error_description || data.msg || 'Login failed.');
+  return data;
+}
+async function sbRefresh(refresh_token){
+  const res = await fetch(`${state.sbUrl}/auth/v1/token?grant_type=refresh_token`, { method:'POST', headers:{ apikey:state.sbAnonKey, 'Content-Type':'application/json' }, body: JSON.stringify({ refresh_token }) });
+  const data = await res.json();
+  if (!res.ok) throw new Error('Session expired.');
+  return data;
+}
+async function getValidAccessToken(){
+  if (!session) throw new Error('Not signed in.');
+  if (Date.now() > session.expires_at - 30000){
+    const fresh = await sbRefresh(session.refresh_token);
+    session = { access_token: fresh.access_token, refresh_token: fresh.refresh_token, expires_at: Date.now() + fresh.expires_in*1000, user: fresh.user || session.user };
+    await persistSession();
+  }
+  return session.access_token;
+}
+async function sbRequest(path, opts){
+  opts = opts || {};
+  const token = await getValidAccessToken();
+  const res = await fetch(`${state.sbUrl}/rest/v1${path}`, {
+    method: opts.method || 'GET',
+    headers: Object.assign({ apikey:state.sbAnonKey, Authorization:`Bearer ${token}`, 'Content-Type':'application/json' }, opts.headers||{}),
+    body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined
+  });
+  const text = await res.text();
+  let data = null;
+  try{ data = text ? JSON.parse(text) : null; } catch(e){ data = text; }
+  if (!res.ok){
+    const msg = (data && (data.message || data.error_description || data.hint)) || (typeof data === 'string' ? data : 'Request failed.');
+    throw new Error(msg);
+  }
+  return data;
+}
+function sbSelect(table, query){ return sbRequest(`/${table}${query||''}`); }
+function sbInsert(table, row){ return sbRequest(`/${table}`, { method:'POST', body: row, headers:{ Prefer:'return=representation' } }); }
+function sbUpdate(table, query, patch){ return sbRequest(`/${table}${query}`, { method:'PATCH', body: patch, headers:{ Prefer:'return=representation' } }); }
+function sbDelete(table, query){ return sbRequest(`/${table}${query}`, { method:'DELETE' }); }
+function sbRpc(fn, params){ return sbRequest(`/rpc/${fn}`, { method:'POST', body: params }); }
+async function sbUploadFile(bucket, path, file){
+  const token = await getValidAccessToken();
+  const res = await fetch(`${state.sbUrl}/storage/v1/object/${bucket}/${encodeURIComponent(path)}`, { method:'POST', headers:{ apikey:state.sbAnonKey, Authorization:`Bearer ${token}`, 'Content-Type': file.type||'application/octet-stream', 'x-upsert':'true' }, body: file });
+  if (!res.ok){ const t = await res.text(); throw new Error('Photo upload failed: ' + t); }
+  return path;
+}
+async function sbSignedUrl(bucket, path, expiresIn){
+  const token = await getValidAccessToken();
+  const res = await fetch(`${state.sbUrl}/storage/v1/object/sign/${bucket}/${encodeURIComponent(path)}`, { method:'POST', headers:{ apikey:state.sbAnonKey, Authorization:`Bearer ${token}`, 'Content-Type':'application/json' }, body: JSON.stringify({ expiresIn: expiresIn||3600 }) });
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.signedURL ? `${state.sbUrl}/storage/v1${data.signedURL}` : null;
+}
+async function sbUpdateUserPassword(newPassword){
+  const token = await getValidAccessToken();
+  const res = await fetch(`${state.sbUrl}/auth/v1/user`, { method:'PUT', headers:{ apikey:state.sbAnonKey, Authorization:`Bearer ${token}`, 'Content-Type':'application/json' }, body: JSON.stringify({ password:newPassword }) });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error_description || data.msg || 'Could not update password.');
+  return data;
+}
+
+/* ============================================================
+   CONFIG + SESSION
+   ============================================================ */
+async function loadConfig(){
+  if (HARDCODED_SUPABASE_URL && HARDCODED_SUPABASE_ANON_KEY){
+    state.sbUrl = HARDCODED_SUPABASE_URL.replace(/\/+$/,'');
+    state.sbAnonKey = HARDCODED_SUPABASE_ANON_KEY;
+    return;
+  }
+  try{ const raw = await storageGet('sb-config', true); if (raw){ const cfg = JSON.parse(raw); state.sbUrl = cfg.url; state.sbAnonKey = cfg.anonKey; } } catch(e){}
+}
+async function saveConfig(url, anonKey){
+  state.sbUrl = url.replace(/\/+$/,''); state.sbAnonKey = anonKey;
+  await storageSet('sb-config', JSON.stringify({ url:state.sbUrl, anonKey }), true);
+}
+async function persistSession(){ try{ await storageSet('sb-session', JSON.stringify(session), false); } catch(e){} }
+async function loadPersistedSession(){ try{ const raw = await storageGet('sb-session', false); if (raw) session = JSON.parse(raw); } catch(e){ session = null; } }
+async function clearSession(){ session = null; try{ await storageDelete('sb-session', false); } catch(e){} }
+async function loadTheme(){
+  try{ const t = await storageGet('theme', false); if (t==='dark'||t==='light'){ state.theme=t; document.documentElement.setAttribute('data-theme', t); } }catch(e){}
+}
+function toggleTheme(){
+  state.theme = state.theme==='dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', state.theme);
+  storageSet('theme', state.theme, false);
+  update();
+}
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function esc(str){ return String(str==null?'':str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function escAttr(str){ return String(str==null?'':str).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function safeId(str){ return 'id'+String(str).replace(/[^a-zA-Z0-9]/g,'_'); }
+function initials(name){ return String(name||'?').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('') || '?'; }
+function avatarColor(name){
+  const colors=['#4F46E5','#1F9D6F','#E0483E','#0E7490','#7C3AED','#C9810A']; let hash=0; const s=String(name||'');
+  for(let i=0;i<s.length;i++){ hash=(hash*31+s.charCodeAt(i))%colors.length; } return colors[Math.abs(hash)%colors.length];
+}
+function fmtTime(ts){ if(!ts) return '—'; return new Date(ts).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
+function fmtMoney(n){ return '₹' + (Number(n)||0).toLocaleString('en-IN'); }
+function csvEscape(v){ v = v==null?'':String(v); if(/[",\n]/.test(v)) return '"'+v.replace(/"/g,'""')+'"'; return v; }
+function downloadTextFile(content, filename, mime){
+  const blob = new Blob([content],{type:mime}); const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function parseContacts(raw){
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === 'string'){ try{ const p = JSON.parse(raw); return Array.isArray(p)?p:[]; }catch(e){ return []; } }
+  return [];
+}
+function hasPerm(p){ return !!(state.user && state.user.permissions && state.user.permissions[p]); }
+function canDo(p){ return state.user && (state.user.role==='admin' || (state.user.role==='accountant' && hasPerm(p))); }
+function filterByDate(list, from, to, field){
+  if (!from && !to) return list;
+  return list.filter(item=>{
+    const raw = item[field]; if (!raw) return false;
+    const d = new Date(raw);
+    if (from && d < new Date(from+'T00:00:00')) return false;
+    if (to && d > new Date(to+'T23:59:59')) return false;
+    return true;
+  });
+}
+function computeStats(){
+  const totalStudents = state.students.length;
+  const totalDue = state.students.reduce((sum,s)=>sum+Math.max(0,(s.fee_total||0)-(s.fee_paid||0)),0);
+  const totalCollected = state.students.reduce((sum,s)=>sum+(s.fee_paid||0),0);
+  const totalAccountants = state.accounts.filter(a=>a.role==='accountant').length;
+  const totalOut = state.leaves.filter(l=>l.status==='out').length;
+  const fullyPaid = state.students.filter(s=>(s.fee_total||0)<=(s.fee_paid||0)).length;
+  const male = state.students.filter(s=>s.gender==='male').length;
+  const female = state.students.filter(s=>s.gender==='female').length;
+  return { totalStudents, totalDue, totalCollected, totalAccountants, totalOut, fullyPaid, male, female, present: totalStudents-totalOut };
+}
+function sortStudentsList(list){
+  const arr = [...list];
+  if (state.sortBy==='name') arr.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  else if (state.sortBy==='roll') arr.sort((a,b)=>(a.roll_no||'').localeCompare(b.roll_no||''));
+  else if (state.sortBy==='room') arr.sort((a,b)=>(a.room||'').localeCompare(b.room||''));
+  else if (state.sortBy==='due_desc') arr.sort((a,b)=>(((b.fee_total||0)-(b.fee_paid||0))-((a.fee_total||0)-(a.fee_paid||0))));
+  else if (state.sortBy==='newest') arr.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  return arr;
+}
+function filteredStudents(){
+  const q = (state.search||'').trim().toLowerCase();
+  let list = state.students;
+  if (q) list = list.filter(s => (s.roll_no||'').toLowerCase().includes(q) || (s.name||'').toLowerCase().includes(q) || (s.room||'').toLowerCase().includes(q) || (s.course||'').toLowerCase().includes(q));
+  if (state.duesFilter==='due') list = list.filter(s=>(s.fee_total||0)>(s.fee_paid||0));
+  else if (state.duesFilter==='paid') list = list.filter(s=>(s.fee_total||0)<=(s.fee_paid||0));
+  return sortStudentsList(list);
+}
+function leaveForStudent(studentId){
+  const mine = state.leaves.filter(l=>l.student_id===studentId && (l.status==='approved'||l.status==='out'));
+  return mine.length ? mine[0] : null;
+}
+function leaveBadgeClass(status){ return status==='out'?'out':status==='completed'?'completed':status==='cancelled'?'cancelled':'approved'; }
+function activityLabel(t){
+  const map={ scan:'Scan', payment:'Payment', student_add:'Student added', student_edit:'Student edited',
+    student_archive:'Moved to recycle bin', student_restore:'Restored', student_purge:'Permanently deleted',
+    leave_granted:'Leave granted', leave_out:'Marked out', leave_in:'Marked in' };
+  return map[t]||t;
+}
+function capitalizeTab(t){
+  const map={ dashboard:'Dashboard', students:'Students', leaves:'Leaves', transactions:'Transactions', staff:'Staff',
+    requests:'Login Requests', activity:'Activity Log', scan:'Scan', myactivity:'My Activity', gate:'Gate', roster:'Leave Roster' };
+  return map[t]||t;
+}
+function renderQRInto(elementId, text){
+  const el = document.getElementById(elementId); if (!el || typeof QRCode==='undefined') return;
+  el.innerHTML=''; new QRCode(el, { text, width:150, height:150, correctLevel: QRCode.CorrectLevel.M });
+}
+function buzz(pattern){ try{ if (navigator.vibrate) navigator.vibrate(pattern); }catch(e){} }
+
+/* ============================================================
+   RENDER + UPDATE (+ centralized post-render side effects —
+   this is what fixes QR codes / photos disappearing after a
+   re-render triggered by an async data load)
+   ============================================================ */
+function render(){
+  const app = document.getElementById('app'); if (!app) return;
+  if (state.view==='loading') app.innerHTML = renderLoading();
+  else if (state.view==='setup') app.innerHTML = renderSetup();
+  else if (state.view==='login') app.innerHTML = renderLogin();
+  else if (state.view==='waiting-approval') app.innerHTML = renderWaitingApproval();
+  else if (state.view==='app'){
+    if (state.user.role==='admin') app.innerHTML = renderAdminShell();
+    else if (state.user.role==='gatekeeper') app.innerHTML = renderGateShell();
+    else app.innerHTML = renderAccountantShell();
+  }
+}
+function update(){
+  const active = document.activeElement;
+  const activeId = active && active.id;
+  const selStart = active && typeof active.selectionStart==='number' ? active.selectionStart : null;
+  const selEnd = active && typeof active.selectionEnd==='number' ? active.selectionEnd : null;
+  render();
+  if (activeId){ const el=document.getElementById(activeId); if (el){ el.focus(); if (selStart!==null && el.setSelectionRange){ try{ el.setSelectionRange(selStart,selEnd); }catch(e){} } } }
+  runPostRenderEffects();
+}
+function applyPhoto(elementId, student, cacheHolder){
+  const holder = document.getElementById(elementId);
+  if (!holder || !student || !student.photo_path) return;
+  if (cacheHolder._photoUrl){ holder.innerHTML = `<img src="${cacheHolder._photoUrl}" alt="" />`; return; }
+  sbSignedUrl('student-photos', student.photo_path, 600).then(url=>{
+    if (!url) return;
+    cacheHolder._photoUrl = url;
+    const h = document.getElementById(elementId);
+    if (h) h.innerHTML = `<img src="${url}" alt="" />`;
+  }).catch(()=>{});
+}
+function runPostRenderEffects(){
+  if (state.modal && state.modal.type==='profile'){
+    renderQRInto('qr-canvas-holder', state.modal.student.roll_no);
+    applyPhoto('profile-photo-holder', state.modal.student, state.modal);
+  }
+  if (state.modal && state.modal.type==='studentForm' && state.modal.existing){
+    applyPhoto('photo-preview-holder', state.modal.existing, state.modal);
+  }
+  if (state.gateResult && state.gateResult.found){
+    applyPhoto('gate-photo-holder', state.gateResult.student, state.gateResult);
+  }
+  loadPhotosForVisibleCards();
+  loadRosterPhotos();
+}
+function toast(message, kind){
+  kind = kind||'success'; state.toast = { message, kind, id: Date.now() }; update();
+  const myId = state.toast.id;
+  setTimeout(()=>{ if (state.toast && state.toast.id===myId){ state.toast=null; update(); } }, 3200);
+}
+function renderToast(){ if(!state.toast) return ''; return `<div class="toast toast-${state.toast.kind}">${esc(state.toast.message)}</div>`; }
+function closeModal(){ state.modal=null; update(); }
+function confirmAction(message, callback){ pendingConfirmCallback=callback; state.modal={type:'confirm',message}; update(); }
+function runConfirmedAction(){ const cb=pendingConfirmCallback; pendingConfirmCallback=null; state.modal=null; update(); if (cb) cb(); }
+function openPhotoLightbox(el){
+  const img = el && el.querySelector ? el.querySelector('img') : null;
+  if (!img) return;
+  state.lightboxUrl = img.src;
+  update();
+}
+function closeLightbox(){ state.lightboxUrl = null; update(); }
+function renderLightbox(){
+  if (!state.lightboxUrl) return '';
+  return `<div class="lightbox-overlay" onclick="closeLightbox()">
+    <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+    <img src="${state.lightboxUrl}" class="lightbox-img" onclick="event.stopPropagation()" />
+  </div>`;
+}
+
+/* ============================================================
+   SETUP / LOGIN / APPROVAL WAIT
+   ============================================================ */
+function renderSetup(){
+  const err = state.setupError;
+  return `<div class="login-screen"><div class="login-card">
+    <div class="brand brand-center"><div class="brand-mark">H</div><div class="brand-text">Hostel Register</div></div>
+    <p class="login-tagline">Connect this app to your Supabase project</p>
+    ${err?`<div class="login-error">${esc(err)}</div>`:''}
+    <div class="setup-note">Find these under <b>Project Settings → API</b>. This browser will remember them after you connect once.</div>
+    <label>Project URL<input id="setup-url" placeholder="https://xxxxx.supabase.co" /></label>
+    <label>Anon / public key<input id="setup-key" placeholder="eyJhbGciOi..." /></label>
+    <button class="btn btn-primary btn-block" onclick="submitSetup()">Connect</button>
+  </div></div>`;
+}
+async function submitSetup(){
+  const url = document.getElementById('setup-url').value.trim();
+  const key = document.getElementById('setup-key').value.trim();
+  if (!url || !key){ state.setupError='Enter both the project URL and the anon key.'; update(); return; }
+  await saveConfig(url, key);
+  state.setupError = null; state.view='login'; update();
+}
+function renderLoading(){ return `<div class="loading-screen"><div class="loading-mark"></div><p>Loading the register…</p></div>`; }
+function renderLogin(){
+  const err = state.loginError;
+  return `<div class="login-screen"><div class="login-card">
+    <div class="brand brand-center"><div class="brand-mark">H</div><div class="brand-text">Hostel Register</div></div>
+    <p class="login-tagline">Student records, fees, gate &amp; ID scanning</p>
+    ${err?`<div class="login-error">${esc(err)}</div>`:''}
+    <label>Email<input id="login-email" onkeydown="if(event.key==='Enter') document.getElementById('login-password').focus()" /></label>
+    <label>Password<input id="login-password" type="password" onkeydown="if(event.key==='Enter') attemptLogin()" /></label>
+    <button class="btn btn-primary btn-block" id="login-submit-btn" onclick="attemptLogin()">Log in</button>
+    <p class="login-hint">No account yet? Logins are created in your Supabase dashboard (Authentication → Users).</p>
+    ${!(HARDCODED_SUPABASE_URL && HARDCODED_SUPABASE_ANON_KEY) ? `<button class="link-btn" style="display:block;margin:10px auto 0;" onclick="reopenSetup()">Reconnect to a different Supabase project</button>` : ''}
+  </div></div>`;
+}
+function reopenSetup(){ state.view='setup'; update(); }
+function renderWaitingApproval(){
+  return `<div class="login-screen"><div class="login-card" style="text-align:center;">
+    <div class="brand brand-center"><div class="brand-mark">H</div><div class="brand-text">Hostel Register</div></div>
+    <h3>Waiting for approval</h3>
+    <p class="muted">An admin needs to approve this login before you can continue. Keep this page open — it'll continue automatically once approved.</p>
+    <button class="btn btn-ghost" onclick="cancelApprovalWait()">Cancel</button>
+  </div></div>`;
+}
+function cancelApprovalWait(){
+  if (approvalPollInterval){ clearInterval(approvalPollInterval); approvalPollInterval=null; }
+  clearSession(); state.user=null; state.view='login'; update();
+}
+async function attemptLogin(){
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!email || !password){ state.loginError='Enter both email and password.'; update(); return; }
+  const btn = document.getElementById('login-submit-btn'); if (btn){ btn.disabled=true; btn.textContent='Signing in…'; }
+  try{
+    const data = await sbSignIn(email, password);
+    session = { access_token:data.access_token, refresh_token:data.refresh_token, expires_at: Date.now()+data.expires_in*1000, user:data.user };
+    await persistSession();
+    await loadMyProfile();
+    state.loginError = null;
+    if (state.user.role === 'admin'){
+      state.view='app'; state.adminTab='dashboard'; state.accTab='scan'; state.gateTab='gate';
+      await loadAllForRole();
+      update();
+    } else {
+      await requestLoginApproval();
+      state.view='waiting-approval';
+      update();
+      startApprovalPolling();
+    }
+  }catch(e){
+    await clearSession();
+    state.loginError = e.message==='inactive' ? 'Your account has been disabled. Contact your administrator.' : (e.message||'Login failed.');
+    update();
+  }
+}
+async function requestLoginApproval(){
+  const device = (navigator.userAgent||'unknown device').slice(0,180);
+  const inserted = await sbInsert('login_requests', { user_id: state.user.id, email: state.user.email, device_info: device, status:'pending' });
+  state.myLoginRequestId = inserted[0].id;
+}
+function startApprovalPolling(){
+  if (approvalPollInterval) clearInterval(approvalPollInterval);
+  approvalPollInterval = setInterval(async ()=>{
+    try{
+      const rows = await sbSelect('login_requests', `?id=eq.${state.myLoginRequestId}&select=status`);
+      const status = rows && rows[0] && rows[0].status;
+      if (status==='approved'){
+        clearInterval(approvalPollInterval); approvalPollInterval=null;
+        state.view='app'; state.adminTab='dashboard'; state.accTab='scan'; state.gateTab='gate';
+        await loadAllForRole();
+        update();
+      } else if (status==='denied'){
+        clearInterval(approvalPollInterval); approvalPollInterval=null;
+        await clearSession(); state.user=null; state.view='login';
+        state.loginError='Your login was denied by the admin.';
+        update();
+      }
+    }catch(e){}
+  }, 4000);
+}
+async function loadMyProfile(){
+  const rows = await sbSelect('profiles', `?id=eq.${session.user.id}&select=*`);
+  const profile = rows && rows[0];
+  if (!profile || profile.active===false) throw new Error('inactive');
+  state.user = { id: profile.id, email: profile.email, name: profile.name||profile.email, role: profile.role, permissions: profile.permissions||{} };
+}
+function logout(){ stopCamera(); if (approvalPollInterval){ clearInterval(approvalPollInterval); approvalPollInterval=null; } clearSession(); state.user=null; state.view='login'; state.scanResult=null; state.gateResult=null; state.scanning=false; update(); }
+async function loadAllForRole(){
+  if (state.user.role==='admin') await Promise.all([loadStudents(), loadProfiles(), loadActivity(), loadLeaves(), loadBatches(), loadLoginRequests()]);
+  else if (state.user.role==='accountant') await Promise.all([loadStudents(), loadActivity(), loadLeaves(), loadBatches()]);
+  else await loadActivity();
+}
+
+/* ============================================================
+   ACCOUNT SETTINGS (change password — any role)
+   ============================================================ */
+function openChangePassword(){ state.modal={type:'changepw'}; update(); }
+function changePasswordModalHTML(){
+  return `<div class="modal-overlay" onclick="if(event.target===this) closeModal()"><div class="modal">
+    <h3>Change password</h3>
+    <div class="form-grid">
+      <label>New password<input id="cp-new" type="password" /></label>
+      <label>Confirm new password<input id="cp-confirm" type="password" /></label>
+    </div>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" id="cp-btn" onclick="submitChangePassword()">Update password</button></div>
+  </div></div>`;
+}
+async function submitChangePassword(){
+  const next = document.getElementById('cp-new').value;
+  const confirmVal = document.getElementById('cp-confirm').value;
+  if (!next || next.length<6){ toast('Password must be at least 6 characters.','error'); return; }
+  if (next!==confirmVal){ toast('Passwords do not match.','error'); return; }
+  const btn=document.getElementById('cp-btn'); if(btn){btn.disabled=true;btn.textContent='Updating…';}
+  try{ await sbUpdateUserPassword(next); closeModal(); toast('Password updated.','success'); }
+  catch(e){ toast(e.message,'error'); if(btn){btn.disabled=false;btn.textContent='Update password';} }
+}
+
+/* ============================================================
+   DATA LOADERS
+   ============================================================ */
+async function loadStudents(){
+  try{ state.students = await sbSelect('students', `?archived=eq.${state.studentsView==='recycle'?'true':'false'}&select=*&order=created_at.desc`); }
+  catch(e){ toast('Could not load students: '+e.message,'error'); state.students=[]; }
+}
+async function loadProfiles(){ try{ state.accounts = await sbSelect('profiles','?select=*&order=created_at.asc'); }catch(e){ state.accounts=[]; } }
+async function loadActivity(){ try{ state.activity = await sbSelect('activity_log','?select=*&order=created_at.desc&limit=400'); }catch(e){ state.activity=[]; } }
+async function loadPaymentsFor(studentId){ try{ return await sbSelect('payments', `?student_id=eq.${studentId}&archived=eq.false&select=*&order=created_at.desc&limit=15`); }catch(e){ return []; } }
+async function loadLeaves(){ try{ state.leaves = await sbSelect('leaves', '?select=*,students(roll_no,name,room,photo_path,batch_id)&order=created_at.desc&limit=400'); }catch(e){ state.leaves=[]; } }
+async function loadLeavesFor(studentId){ try{ return await sbSelect('leaves', `?student_id=eq.${studentId}&select=*&order=created_at.desc&limit=10`); }catch(e){ return []; } }
+async function loadBatches(){ try{ state.batches = await sbSelect('batches','?select=*&order=created_at.asc'); }catch(e){ state.batches=[]; } }
+async function loadLoginRequests(){ try{ state.loginRequests = await sbSelect('login_requests','?select=*&order=requested_at.desc&limit=100'); }catch(e){ state.loginRequests=[]; } }
+
+/* ============================================================
+   TOPBAR
+   ============================================================ */
+function renderTopbar(){
+  const tab = state.user.role==='admin'?state.adminTab : state.user.role==='gatekeeper'?state.gateTab : state.accTab;
+  return `<header class="topbar">
+    <div class="topbar-title">${capitalizeTab(tab)}</div>
+    <div class="topbar-user">
+      <span class="role-badge role-${state.user.role}">${esc(state.user.role)}</span>
+      <span class="user-name">${esc(state.user.name)}</span>
+      <button class="account-icon-btn" title="Toggle dark mode" onclick="toggleTheme()">${state.theme==='dark'?'☀':'🌙'}</button>
+      <button class="account-icon-btn" title="Account settings" onclick="openChangePassword()">⚙</button>
+      <button class="link-btn" onclick="logout()">Log out</button>
+    </div>
+  </header>`;
+}
+
+/* ============================================================
+   ADMIN SHELL
+   ============================================================ */
+function renderAdminShell(){
+  const pendingCount = state.loginRequests.filter(r=>r.status==='pending').length;
+  return `<div class="app-shell">
+    <nav class="sidebar">
+      <div class="brand"><div class="brand-mark">H</div><div class="brand-text">Hostel<br>Register</div></div>
+      <button class="nav-item ${state.adminTab==='dashboard'?'active':''}" onclick="setAdminTab('dashboard')">Dashboard</button>
+      <button class="nav-item ${state.adminTab==='students'?'active':''}" onclick="setAdminTab('students')">Students</button>
+      <button class="nav-item ${state.adminTab==='leaves'?'active':''}" onclick="setAdminTab('leaves')">Leaves</button>
+      <button class="nav-item ${state.adminTab==='transactions'?'active':''}" onclick="setAdminTab('transactions')">Transactions</button>
+      <button class="nav-item ${state.adminTab==='staff'?'active':''}" onclick="setAdminTab('staff')">Staff</button>
+      <button class="nav-item ${state.adminTab==='requests'?'active':''}" onclick="setAdminTab('requests')">Requests ${pendingCount>0?`<span class="nav-badge">${pendingCount}</span>`:''}</button>
+      <button class="nav-item ${state.adminTab==='activity'?'active':''}" onclick="setAdminTab('activity')">Activity Log</button>
+    </nav>
+    <div class="main-col">
+      ${renderTopbar()}
+      <main class="main">
+        ${ state.adminTab==='dashboard'?renderDashboardTab():
+           state.adminTab==='students'?renderStudentsTab():
+           state.adminTab==='leaves'?renderLeavesTab():
+           state.adminTab==='transactions'?renderTransactionsTab():
+           state.adminTab==='staff'?renderStaffTab():
+           state.adminTab==='requests'?renderRequestsTab():
+           renderActivityTab() }
+      </main>
+    </div>
+  </div>${renderModal()}${renderToast()}${renderLightbox()}`;
+}
+function setAdminTab(tab){
+  state.adminTab=tab; state.search='';
+  update();
+  if (tab==='leaves') loadLeaves().then(update);
+  if (tab==='requests') loadLoginRequests().then(update);
+}
+
+function renderActivityRow(a){
+  return `<tr><td><span class="badge badge-${a.type}">${esc(activityLabel(a.type))}</span></td><td>${esc(a.details||'')}</td><td class="muted">${esc(a.by_name||'')}</td><td class="muted">${fmtTime(a.created_at)}</td></tr>`;
+}
+
+/* ---------- Dashboard ---------- */
+function renderDashboardTab(){
+  const stats = computeStats();
+  const dues = state.students.filter(s=>(s.fee_total||0)>(s.fee_paid||0));
+  const batchMap = {}; state.batches.forEach(b=>batchMap[b.id]=b.name);
+  const recentLeaves = [...state.leaves].slice(0,40).sort((a,b)=>{
+    const an = batchMap[(a.students||{}).batch_id] || ''; const bn = batchMap[(b.students||{}).batch_id] || '';
+    return an.localeCompare(bn);
+  });
+  const recent = state.activity.slice(0,8);
+  return `
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-num">${stats.totalStudents}</div><div class="stat-label">👥 Total students</div></div>
+    <div class="stat-card"><div class="stat-num">${stats.present}</div><div class="stat-label">🏠 Present in campus</div></div>
+    <div class="stat-card stat-out"><div class="stat-num">${stats.totalOut}</div><div class="stat-label">🚪 Currently out</div></div>
+    <div class="stat-card"><div class="stat-num">${stats.fullyPaid}</div><div class="stat-label">✓ Fully paid</div></div>
+  </div>
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-num">${stats.male}</div><div class="stat-label">♂ Male students</div></div>
+    <div class="stat-card"><div class="stat-num">${stats.female}</div><div class="stat-label">♀ Female students</div></div>
+    <div class="stat-card"><div class="stat-num">${fmtMoney(stats.totalCollected)}</div><div class="stat-label">💰 Fees collected</div></div>
+    <div class="stat-card stat-due"><div class="stat-num">${fmtMoney(stats.totalDue)}</div><div class="stat-label">⚠ Fees outstanding</div></div>
+  </div>
+  <div class="card" style="margin-bottom:18px;">
+    <h3>Students with dues (${dues.length})</h3>
+    ${dues.length? `<table class="table"><tbody>${dues.slice(0,15).map(s=>`<tr style="cursor:pointer;" onclick="openStudentProfile('${escAttr(s.roll_no)}')"><td>${esc(s.name)} <span class="mono muted">${esc(s.roll_no)}</span></td><td class="text-due">${fmtMoney((s.fee_total||0)-(s.fee_paid||0))}</td></tr>`).join('')}</tbody></table>${dues.length>15?`<p class="muted">+ ${dues.length-15} more — see the Students tab.</p>`:''}` : `<p class="empty-hint">No outstanding dues.</p>`}
+  </div>
+  <div class="card" style="margin-bottom:18px;">
+    <h3>Out / returned — sorted by batch</h3>
+    ${recentLeaves.length? `<table class="table"><thead><tr><th>Student</th><th>Batch</th><th>Status</th><th>Times</th></tr></thead><tbody>${recentLeaves.map(l=>{ const stu=l.students||{}; const bname=batchMap[stu.batch_id]||'—'; return `<tr><td>${esc(stu.name||'')} <span class="mono muted">${esc(stu.roll_no||'')}</span></td><td class="muted">${esc(bname)}</td><td><span class="badge badge-${leaveBadgeClass(l.status)}">${esc(l.status)}</span></td><td class="muted">${l.out_at?'Out: '+fmtTime(l.out_at):''}${l.in_at?'<br>In: '+fmtTime(l.in_at):''}</td></tr>`; }).join('')}</tbody></table>` : `<p class="empty-hint">No leave activity yet.</p>`}
+  </div>
+  <div class="card"><h3>Recent activity</h3>
+    ${recent.length? `<table class="table"><tbody>${recent.map(renderActivityRow).join('')}</tbody></table>` : `<p class="empty-hint">Nothing recorded yet.</p>`}
+  </div>`;
+}
+
+/* ---------- Students (card grid) ---------- */
+function studentInitialsAvatar(s, sizeClass){
+  if (s.photo_path) return `<div class="${sizeClass}" data-photo-for="${escAttr(s.id)}" style="background:${avatarColor(s.name)}">${esc(initials(s.name))}</div>`;
+  return `<div class="${sizeClass}" style="background:${avatarColor(s.name)}">${esc(initials(s.name))}</div>`;
+}
+function renderStudentCard(s){
+  const due = Math.max(0,(s.fee_total||0)-(s.fee_paid||0));
+  const leave = leaveForStudent(s.id);
+  const isAdmin = state.user.role==='admin';
+  const canGrant = canDo('grant_leave');
+  return `<div class="student-card" onclick="openStudentProfile('${escAttr(s.roll_no)}')">
+    <div class="student-card-top">
+      ${studentInitialsAvatar(s,'sc-avatar')}
+      <div style="min-width:0;">
+        <div class="sc-name">${esc(s.name)}</div>
+        <div class="sc-roll">${esc(s.roll_no)}</div>
+      </div>
+      ${due>0? `<span class="pay-pill" title="Dues pending">₹</span>` : `<span class="paid-tick" title="Fully paid">✓</span>`}
+    </div>
+    ${leave && leave.status==='out' ? `<span class="out-pill">● Out since ${fmtTime(leave.out_at)}</span>` : leave? `<span class="out-pill" style="background:var(--amber-soft);color:var(--amber);">● Permitted · token ${esc(leave.token||'')}</span>` : ''}
+    <div class="sc-meta"><span>${esc(s.room||'—')} · ${esc(s.course||'—')}</span><span class="${due>0?'text-due':'text-paid'}">${due>0?fmtMoney(due):'Paid'}</span></div>
+    ${state.studentsView==='active' ? `
+    <div class="sc-actions" onclick="event.stopPropagation()">
+      ${isAdmin? `<button class="icon-btn" onclick="openStudentForm('${escAttr(s.roll_no)}')">Edit</button>` : ''}
+      ${canGrant && !leave? `<button class="icon-btn" onclick="openGrantLeaveModal('${escAttr(s.roll_no)}')">Grant leave</button>` : ''}
+      ${isAdmin? `<button class="icon-btn icon-danger" onclick="openArchiveModal('${escAttr(s.roll_no)}')">Archive</button>` : ''}
+    </div>` : state.studentsView==='recycle' ? `
+    <div class="sc-actions" onclick="event.stopPropagation()">
+      <button class="icon-btn" onclick="restoreStudent('${escAttr(s.roll_no)}')">Restore</button>
+      <button class="icon-btn icon-danger" onclick="purgeStudent('${escAttr(s.roll_no)}')">Delete forever</button>
+    </div>` : ''}
+  </div>`;
+}
+function renderStudentsTab(){
+  const list = filteredStudents();
+  const isAdmin = state.user.role==='admin';
+  const canAdd = canDo('add_student');
+  return `<div class="toolbar">
+    <input id="search-input" class="search-input" placeholder="Search by roll no, name, or room…" value="${esc(state.search)}" oninput="onSearchInput(this.value)" />
+    <div class="toolbar-actions">
+      <select class="select-sm" onchange="setSortBy(this.value)">
+        <option value="name" ${state.sortBy==='name'?'selected':''}>Sort: Name</option>
+        <option value="roll" ${state.sortBy==='roll'?'selected':''}>Sort: Roll No.</option>
+        <option value="room" ${state.sortBy==='room'?'selected':''}>Sort: Room</option>
+        <option value="due_desc" ${state.sortBy==='due_desc'?'selected':''}>Sort: Dues (high→low)</option>
+        <option value="newest" ${state.sortBy==='newest'?'selected':''}>Sort: Newest</option>
+      </select>
+      <select class="select-sm" onchange="setDuesFilter(this.value)">
+        <option value="all" ${state.duesFilter==='all'?'selected':''}>Show: All</option>
+        <option value="due" ${state.duesFilter==='due'?'selected':''}>Show: With dues</option>
+        <option value="paid" ${state.duesFilter==='paid'?'selected':''}>Show: Fully paid</option>
+      </select>
+      ${isAdmin? `<div class="segmented">
+        <button class="${state.studentsView==='active'?'active':''}" onclick="setStudentsView('active')">Active</button>
+        <button class="${state.studentsView==='recycle'?'active':''}" onclick="setStudentsView('recycle')">Recycle bin</button>
+      </div>` : ''}
+      ${isAdmin? `<button class="btn btn-secondary" onclick="openBatchesModal()">Batches</button>` : ''}
+      ${isAdmin && state.studentsView==='active'? `<button class="btn btn-secondary" onclick="openBulkImport()">Bulk import</button><button class="btn btn-secondary" onclick="exportCSV()">Export</button><button class="btn btn-secondary" onclick="printAllIDCards()">Print IDs</button>` : ''}
+      ${state.studentsView==='active' && canAdd? `<button class="btn btn-primary" onclick="openStudentForm(null)">Add student</button>` : ''}
+    </div>
+  </div>
+  ${list.length? `<div class="student-grid">${list.map(renderStudentCard).join('')}</div>` : `<div class="card"><p class="empty-hint">${state.studentsView==='recycle'?'Recycle bin is empty.':'No students match. Try a different search, or add your first student.'}</p></div>`}
+  `;
+}
+function onSearchInput(val){ state.search=val; update(); }
+function setStudentsView(v){ state.studentsView=v; state.search=''; loadStudents().then(update); }
+function setSortBy(v){ state.sortBy=v; update(); }
+function setDuesFilter(v){ state.duesFilter=v; update(); }
+function loadPhotosForVisibleCards(){
+  document.querySelectorAll('[data-photo-for]').forEach(el=>{
+    const id = el.getAttribute('data-photo-for');
+    const s = state.students.find(x=>x.id===id);
+    if (!s || !s.photo_path || el.querySelector('img')) return;
+    sbSignedUrl('student-photos', s.photo_path, 600).then(url=>{ if (url && el.isConnected) el.innerHTML = `<img src="${url}" alt="" />`; }).catch(()=>{});
+  });
+}
+
+/* ============================================================
+   BATCHES
+   ============================================================ */
+function openBatchesModal(){ state.modal={type:'batches'}; update(); }
+function batchesModalHTML(){
+  return `<div class="modal-overlay" onclick="if(event.target===this) closeModal()"><div class="modal modal-lg">
+    <h3>Manage batches</h3>
+    <p class="muted">A batch sets the default fee — assign a student to a batch and their fee mode/amount auto-fills (still editable per student).</p>
+    <table class="table"><thead><tr><th>Name</th><th>Mode</th><th>Fee</th><th></th></tr></thead>
+    <tbody>${state.batches.length? state.batches.map(b=>`<tr>
+      <td>${esc(b.name)}</td><td class="muted">${b.fee_mode==='monthly'?'Monthly':'One-time'}</td><td>${fmtMoney(b.fee_amount)}</td>
+      <td><button class="icon-btn icon-danger" onclick="deleteBatch('${escAttr(b.id)}')">Delete</button></td>
+    </tr>`).join('') : `<tr><td colspan="4" class="empty-hint">No batches yet.</td></tr>`}</tbody></table>
+    <hr class="section-divider" />
+    <h4>Add a batch</h4>
+    <div class="form-grid two-col">
+      <label>Name<input id="batch-name" placeholder="e.g. 2024 Intake" /></label>
+      <label>Fee mode<select id="batch-feemode"><option value="onetime">One-time</option><option value="monthly">Monthly</option></select></label>
+      <label>Fee amount (₹)<input id="batch-fee" type="number" /></label>
+    </div>
+    <button class="btn btn-primary" onclick="addBatch()">Add batch</button>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Close</button></div>
+  </div></div>`;
+}
+async function addBatch(){
+  const name = document.getElementById('batch-name').value.trim();
+  const feeMode = document.getElementById('batch-feemode').value;
+  const fee = parseFloat(document.getElementById('batch-fee').value)||0;
+  if (!name){ toast('Enter a batch name.','error'); return; }
+  try{ await sbInsert('batches',{name, fee_mode:feeMode, fee_amount:fee}); toast('Batch added.','success'); await loadBatches(); }
+  catch(e){ toast(e.message,'error'); }
+  update();
+}
+function deleteBatch(id){
+  confirmAction('Delete this batch? Students already assigned to it keep their current fee settings.', async ()=>{
+    try{ await sbDelete('batches', `?id=eq.${id}`); toast('Batch deleted.','success'); await loadBatches(); }
+    catch(e){ toast(e.message,'error'); }
+    update();
+  });
+}
+function onBatchChange(){
+  const id = document.getElementById('f-batch').value;
+  const batch = state.batches.find(b=>b.id===id);
+  if (!batch) return;
+  document.getElementById('f-feemode').value = batch.fee_mode;
+  document.getElementById('f-feetotal').value = batch.fee_amount;
+}
+
+/* ============================================================
+   STUDENT FORM (add/edit) — with dynamic contacts, gender, batch
+   ============================================================ */
+function openStudentForm(rollNo){
+  const existing = rollNo ? state.students.find(s=>s.roll_no.toLowerCase()===rollNo.toLowerCase()) : null;
+  const contacts = existing ? parseContacts(existing.contacts) : [];
+  state.modal = { type:'studentForm', existing, originalRollNo: rollNo, contacts: contacts.length?contacts:[{label:'Student',phone:''}] };
+  update();
+}
+function syncContactsFromDOM(){
+  if (!state.modal || !state.modal.contacts) return;
+  state.modal.contacts.forEach((c,i)=>{
+    const l = document.getElementById('contact-label-'+i); const p = document.getElementById('contact-phone-'+i);
+    if (l) c.label = l.value; if (p) c.phone = p.value;
+  });
+}
+function addContactRow(){ syncContactsFromDOM(); state.modal.contacts.push({label:'',phone:''}); update(); }
+function removeContactRow(idx){ syncContactsFromDOM(); state.modal.contacts.splice(idx,1); update(); }
+function contactRowsHTML(contacts){
+  return contacts.map((c,i)=>`<div class="contact-row">
+    <input class="label-input" id="contact-label-${i}" placeholder="Label (Student / Father / ...)" value="${esc(c.label)}" />
+    <input class="phone-input" id="contact-phone-${i}" placeholder="Phone number" value="${esc(c.phone)}" />
+    <button type="button" class="icon-btn icon-danger" onclick="removeContactRow(${i})">✕</button>
+  </div>`).join('');
+}
+function studentFormModalHTML(existing, contacts){
+  const s = existing || {};
+  return `<div class="modal-overlay" onclick="if(event.target===this) closeModal()">
+    <div class="modal modal-lg">
+      <h3>${existing?'Edit student':'Add student'}</h3>
+      <div class="photo-row">
+        <div class="photo-preview" id="photo-preview-holder">${initials(s.name||'?')}</div>
+        <div><label style="margin-bottom:4px;">Photo (optional)</label><input type="file" id="f-photo" accept="image/*" /></div>
+      </div>
+      <div class="form-grid two-col">
+        <label>Roll number<input id="f-rollno" value="${esc(s.roll_no||'')}" ${existing?'readonly':''} /></label>
+        <label>Full name<input id="f-name" value="${esc(s.name||'')}" /></label>
+        <label>Room no.<input id="f-room" value="${esc(s.room||'')}" /></label>
+        <label>Course<input id="f-course" value="${esc(s.course||'')}" /></label>
+        <label>Gender<select id="f-gender">
+          <option value="" ${!s.gender?'selected':''}>— Not specified —</option>
+          <option value="male" ${s.gender==='male'?'selected':''}>Male</option>
+          <option value="female" ${s.gender==='female'?'selected':''}>Female</option>
+          <option value="other" ${s.gender==='other'?'selected':''}>Other</option>
+        </select></label>
+        <label>Batch<select id="f-batch" onchange="onBatchChange()">
+          <option value="">— None —</option>
+          ${state.batches.map(b=>`<option value="${escAttr(b.id)}" ${s.batch_id===b.id?'selected':''}>${esc(b.name)}</option>`).join('')}
+        </select></label>
+        <label>Father's name<input id="f-father" value="${esc(s.father_name||'')}" /></label>
+        <label>Mother's name<input id="f-mother" value="${esc(s.mother_name||'')}" /></label>
+      </div>
+      <div class="form-grid"><label>Address<textarea id="f-address" rows="2">${esc(s.address||'')}</textarea></label></div>
+      <hr class="section-divider" />
+      <label style="margin-bottom:8px;">Contact numbers</label>
+      <div id="contacts-holder">${contactRowsHTML(contacts)}</div>
+      <button type="button" class="link-btn" onclick="addContactRow()">+ Add another contact</button>
+      <hr class="section-divider" />
+      <div class="form-grid two-col">
+        <label>Fee mode<select id="f-feemode">
+          <option value="onetime" ${(s.fee_mode||'onetime')==='onetime'?'selected':''}>One-time</option>
+          <option value="monthly" ${s.fee_mode==='monthly'?'selected':''}>Monthly</option>
+        </select></label>
+        <label>Fee amount (₹)<input id="f-feetotal" type="number" value="${s.fee_total!=null?s.fee_total:''}" /></label>
+      </div>
+      ${existing ? `
+      <div class="form-grid">
+        <label>Fee paid so far<div style="margin-top:5px; padding:10px 11px; background:var(--input-bg); border:1.5px solid var(--border); border-radius:9px;">${fmtMoney(s.fee_paid)} <span class="muted">— use "Record a payment" in their profile to add more</span></div></label>
+      </div>` : `
+      <div class="form-grid two-col">
+        <label>Fee paid at registration (₹)<input id="f-feepaid" type="number" value="0" onchange="onAddFeePaidChange()" /></label>
+        <label>Method<select id="f-paymethod" onchange="onAddFeePaidChange()"><option value="cash">Cash</option><option value="online">Online</option></select></label>
+      </div>
+      <div class="form-grid two-col" id="f-online-fields" style="display:none;">
+        <label>Transaction UID<input id="f-payuid" /></label>
+        <label>Bank<input id="f-paybank" /></label>
+      </div>`}
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" id="student-save-btn" onclick="submitStudentForm()">${existing?'Save changes':'Add student'}</button>
+      </div>
+    </div>
+  </div>`;
+}
+function onAddFeePaidChange(){
+  const amount = parseFloat(document.getElementById('f-feepaid').value)||0;
+  const method = document.getElementById('f-paymethod').value;
+  const el = document.getElementById('f-online-fields');
+  if (el) el.style.display = (amount>0 && method==='online') ? 'grid' : 'none';
+}
+async function submitStudentForm(){
+  syncContactsFromDOM();
+  const originalRollNo = state.modal && state.modal.originalRollNo;
+  const rollNo = document.getElementById('f-rollno').value.trim();
+  const name = document.getElementById('f-name').value.trim();
+  const room = document.getElementById('f-room').value.trim();
+  const course = document.getElementById('f-course').value.trim();
+  const gender = document.getElementById('f-gender').value || null;
+  const batchId = document.getElementById('f-batch').value || null;
+  const father = document.getElementById('f-father').value.trim();
+  const mother = document.getElementById('f-mother').value.trim();
+  const address = document.getElementById('f-address').value.trim();
+  const feeMode = document.getElementById('f-feemode').value;
+  const feeTotal = parseFloat(document.getElementById('f-feetotal').value) || 0;
+  const photoFile = document.getElementById('f-photo').files[0];
+  const contacts = (state.modal.contacts||[]).filter(c=>c.phone && c.phone.trim());
+  if (!rollNo || !name){ toast('Roll number and name are required.','error'); return; }
+  const btn = document.getElementById('student-save-btn'); if (btn){ btn.disabled=true; btn.textContent='Saving…'; }
+  try{
+    const payload = { name, room, course, gender, batch_id:batchId, father_name:father, mother_name:mother, address, contacts, fee_mode:feeMode, fee_total:feeTotal };
+    if (!originalRollNo){
+      payload.fee_paid = 0;
+      const inserted = await sbInsert('students', Object.assign({ roll_no: rollNo }, payload));
+      const row = inserted[0];
+      if (photoFile){ const path = await uploadStudentPhoto(row.id, photoFile); await sbUpdate('students', `?id=eq.${row.id}`, { photo_path: path }); }
+      const initialPaid = parseFloat(document.getElementById('f-feepaid').value) || 0;
+      if (initialPaid > 0){
+        const method = document.getElementById('f-paymethod').value;
+        const uid = document.getElementById('f-payuid') ? document.getElementById('f-payuid').value.trim() : '';
+        const bank = document.getElementById('f-paybank') ? document.getElementById('f-paybank').value.trim() : '';
+        try{ await sbRpc('record_initial_payment', { p_roll_no: rollNo, p_amount: initialPaid, p_method: method, p_uid: uid, p_bank: bank }); }
+        catch(payErr){ toast('Student added, but the initial payment could not be recorded: '+payErr.message, 'error'); }
+      }
+      await sbInsert('activity_log', { type:'student_add', roll_no: rollNo, details:`${name} (${rollNo})`, by_name: state.user.name });
+      toast('Student added.','success');
+    } else {
+      const row = state.students.find(s=>s.roll_no.toLowerCase()===originalRollNo.toLowerCase());
+      const patch = Object.assign({}, payload);
+      if (photoFile){ patch.photo_path = await uploadStudentPhoto(row.id, photoFile); }
+      await sbUpdate('students', `?id=eq.${row.id}`, patch);
+      await sbInsert('activity_log', { type:'student_edit', roll_no: rollNo, details:`${name} (${rollNo})`, by_name: state.user.name });
+      toast('Student updated.','success');
+    }
+    closeModal();
+    await Promise.all([loadStudents(), loadActivity()]);
+    update();
+  }catch(e){ toast(e.message,'error'); if (btn){ btn.disabled=false; btn.textContent = originalRollNo?'Save changes':'Add student'; } }
+}
+async function uploadStudentPhoto(studentId, file){
+  const ext = ((file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')) || 'jpg';
+  return await sbUploadFile('student-photos', `${studentId}.${ext}`, file);
+}
+
+/* ============================================================
+   ARCHIVE / RESTORE / PURGE (recycle bin)
+   ============================================================ */
+function openArchiveModal(rollNo){ state.modal = { type:'archive', rollNo }; update(); }
+function archiveModalHTML(rollNo){
+  return `<div class="modal-overlay" onclick="if(event.target===this) closeModal()">
+    <div class="modal">
+      <h3>Move to recycle bin</h3>
+      <div class="form-grid">
+        <label>Reason<select id="archive-reason">
+          <option value="fee_refunded">Fee refunded</option>
+          <option value="left_hostel">Left the hostel</option>
+          <option value="other">Other</option>
+        </select></label>
+        <label>Note (optional)<textarea id="archive-note" rows="2"></textarea></label>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-danger" onclick="submitArchive('${escAttr(rollNo)}')">Move to recycle bin</button>
+      </div>
+    </div>
+  </div>`;
+}
+async function submitArchive(rollNo){
+  const reason = document.getElementById('archive-reason').value;
+  const note = document.getElementById('archive-note').value.trim();
+  try{
+    const row = state.students.find(s=>s.roll_no.toLowerCase()===rollNo.toLowerCase());
+    if (!row) throw new Error('Student not found.');
+    await sbUpdate('students', `?id=eq.${row.id}`, { archived:true, archived_reason: reason + (note?` — ${note}`:''), archived_at: new Date().toISOString(), archived_by: state.user.name });
+    await sbInsert('activity_log', { type:'student_archive', roll_no: rollNo, details:`${row.name} — ${reason}${note?': '+note:''}`, by_name: state.user.name });
+    closeModal();
+    toast('Moved to recycle bin.','success');
+    await Promise.all([loadStudents(), loadActivity()]);
+  }catch(e){ toast(e.message,'error'); }
+  update();
+}
+function restoreStudent(rollNo){
+  confirmAction(`Restore ${rollNo} from the recycle bin?`, async ()=>{
+    try{
+      const row = state.students.find(s=>s.roll_no.toLowerCase()===rollNo.toLowerCase());
+      await sbUpdate('students', `?id=eq.${row.id}`, { archived:false, archived_reason:null, archived_at:null, archived_by:null });
+      await sbInsert('activity_log', { type:'student_restore', roll_no: rollNo, details:`Restored ${rollNo}`, by_name: state.user.name });
+      toast('Student restored.','success');
+      await Promise.all([loadStudents(), loadActivity()]);
+    }catch(e){ toast(e.message,'error'); }
+    update();
+  });
+}
+function purgeStudent(rollNo){
+  confirmAction(`Permanently delete ${rollNo}? This cannot be undone — all records, payments and history for this student will be erased.`, async ()=>{
+    try{
+      const row = state.students.find(s=>s.roll_no.toLowerCase()===rollNo.toLowerCase());
+      await sbDelete('students', `?id=eq.${row.id}`);
+      await sbInsert('activity_log', { type:'student_purge', roll_no: rollNo, details:`Permanently deleted ${rollNo}`, by_name: state.user.name });
+      toast('Student permanently deleted.','success');
+      await Promise.all([loadStudents(), loadActivity()]);
+    }catch(e){ toast(e.message,'error'); }
+    update();
+  });
+}
+
+/* ============================================================
+   FULL STUDENT PROFILE (clickable anywhere, big photo)
+   ============================================================ */
+function openStudentProfile(rollNo){
+  const s = state.students.find(x=>x.roll_no.toLowerCase()===rollNo.toLowerCase());
+  if (!s){ toast('Student not found.','error'); return; }
+  state.modal = { type:'profile', student:s, payments:[], leaveHistory:[] };
+  update();
+  loadPaymentsFor(s.id).then(payments=>{ if (state.modal && state.modal.type==='profile' && state.modal.student.id===s.id){ state.modal.payments=payments; update(); } });
+  loadLeavesFor(s.id).then(lv=>{ if (state.modal && state.modal.type==='profile' && state.modal.student.id===s.id){ state.modal.leaveHistory=lv; update(); } });
+}
+function profileModalHTML(s, payments, leaveHistory){
+  const due = Math.max(0,(s.fee_total||0)-(s.fee_paid||0));
+  const contacts = parseContacts(s.contacts);
+  const currentLeave = leaveForStudent(s.id);
+  const isAdmin = state.user.role==='admin';
+  const canRecordPayment = canDo('record_payment');
+  const canGrantLeave = canDo('grant_leave');
+  const batch = state.batches.find(b=>b.id===s.batch_id);
+  const leavesTaken = leaveHistory.filter(l=>l.status==='completed').length;
+  return `<div class="modal-overlay" onclick="if(event.target===this) closeModal()">
+    <div class="modal modal-lg">
+      <div class="profile-head">
+        <div class="profile-photo" id="profile-photo-holder" onclick="openPhotoLightbox(this)" style="background:${avatarColor(s.name)}">${esc(initials(s.name))}</div>
+        <div>
+          <div class="profile-name">${esc(s.name)}</div>
+          <div class="profile-roll">${esc(s.roll_no)}</div>
+          ${currentLeave ? `<span class="out-pill" style="margin-top:6px;">● ${currentLeave.status==='out'?'Out since '+fmtTime(currentLeave.out_at):'Permitted · token '+esc(currentLeave.token||'')}</span>` : ''}
+        </div>
+      </div>
+      <div class="profile-grid">
+        <div><span class="muted">Room</span><div>${esc(s.room||'—')}</div></div>
+        <div><span class="muted">Course</span><div>${esc(s.course||'—')}</div></div>
+        <div><span class="muted">Gender</span><div>${s.gender?esc(s.gender):'—'}</div></div>
+        <div><span class="muted">Batch</span><div>${batch?esc(batch.name):'—'}</div></div>
+        <div><span class="muted">Father's name</span><div>${esc(s.father_name||'—')}</div></div>
+        <div><span class="muted">Mother's name</span><div>${esc(s.mother_name||'—')}</div></div>
+        <div style="grid-column:1/-1;"><span class="muted">Address</span><div>${esc(s.address||'—')}</div></div>
+      </div>
+      <div class="profile-section-title">Contacts</div>
+      <div>${contacts.length? contacts.map(c=>`<span class="contact-chip"><span class="chip-label">${esc(c.label||'Contact')}</span> ${esc(c.phone)}</span>`).join('') : '<span class="muted">No contacts on file.</span>'}</div>
+
+      <div class="profile-section-title">Fee &amp; payments</div>
+      <div class="profile-grid">
+        <div><span class="muted">Mode</span><div>${s.fee_mode==='monthly'?'Monthly':'One-time'}</div></div>
+        <div><span class="muted">Amount</span><div>${fmtMoney(s.fee_total)}</div></div>
+        <div><span class="muted">Paid</span><div class="text-paid">${fmtMoney(s.fee_paid)}</div></div>
+        <div><span class="muted">Due</span><div class="${due>0?'text-due':'text-paid'}">${due>0?fmtMoney(due):'Fully paid'}</div></div>
+      </div>
+      ${canRecordPayment ? recordPaymentFormHTML(s.roll_no) : ''}
+      ${payments && payments.length ? `<table class="table"><tbody>${payments.map(p=>`<tr><td>${fmtTime(p.created_at)}</td><td>${fmtMoney(p.amount)}</td><td class="muted">${esc(p.payment_method||'cash')}${p.payment_method==='online'&&p.bank_name?' · '+esc(p.bank_name):''}${p.payment_method==='online'&&p.transaction_uid?' · '+esc(p.transaction_uid):''}</td><td class="muted">${esc(p.recorded_by_name||'')}</td><td class="muted">${esc(p.note||'')}</td>${isAdmin?`<td class="row-actions"><button class="icon-btn" onclick="openEditPaymentModal('${escAttr(p.id)}','profile')">Edit</button><button class="icon-btn icon-danger" onclick="archivePaymentAction('${escAttr(p.id)}','profile')">Bin</button></td>`:''}</tr>`).join('')}</tbody></table>` : '<p class="muted">No payments recorded yet.</p>'}
+
+      <div class="profile-section-title">Leave history (${leavesTaken} completed)</div>
+      ${leaveHistory && leaveHistory.length ? `<table class="table"><tbody>${leaveHistory.map(l=>`<tr><td><span class="badge badge-${leaveBadgeClass(l.status)}">${esc(l.status)}</span></td><td class="mono muted">${esc(l.token||'—')}</td><td class="muted">${esc(l.reason||'')}</td><td class="muted">${l.out_at?'Out '+fmtTime(l.out_at):''} ${l.in_at?'· In '+fmtTime(l.in_at):''}</td></tr>`).join('')}</tbody></table>` : '<p class="muted">No leave records.</p>'}
+
+      ${isAdmin ? `
+      <div class="profile-section-title">Student QR</div>
+      <div class="profile-qr-row">
+        <div id="qr-canvas-holder" class="id-qr"></div>
+        <div class="qr-actions">
+          <button class="btn btn-secondary btn-sm" onclick="downloadQR('${escAttr(s.roll_no)}')">Download QR</button>
+          <button class="btn btn-secondary btn-sm" onclick="printIDCard('${escAttr(s.roll_no)}')">Print ID card</button>
+        </div>
+      </div>` : ''}
+
+      <div class="profile-actions">
+        ${isAdmin? `<button class="btn btn-secondary" onclick="openStudentForm('${escAttr(s.roll_no)}')">Edit details</button>` : ''}
+        ${canGrantLeave && !currentLeave? `<button class="btn btn-secondary" onclick="openGrantLeaveModal('${escAttr(s.roll_no)}')">Grant leave</button>` : ''}
+        ${isAdmin? `<button class="btn btn-danger" onclick="closeModal(); openArchiveModal('${escAttr(s.roll_no)}')">Move to recycle bin</button>` : ''}
+        <button class="btn btn-ghost" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>`;
+}
+function recordPaymentFormHTML(rollNo){
+  return `<div class="pay-form">
+    <h4>Record a payment</h4>
+    <div class="form-grid two-col">
+      <label>Amount (₹)<input id="pay-amount" type="number" min="1" /></label>
+      <label>Method<select id="pay-method" onchange="onPayMethodChange()"><option value="cash">Cash</option><option value="online">Online</option></select></label>
+    </div>
+    <div id="online-fields" style="display:none;" class="form-grid two-col">
+      <label>Transaction UID / UTR<input id="pay-uid" /></label>
+      <label>Bank name<input id="pay-bank" /></label>
+    </div>
+    <div class="form-grid"><label>Note (optional)<input id="pay-note" /></label></div>
+    <button class="btn btn-primary" id="pay-btn" onclick="recordPayment('${escAttr(rollNo)}')">Record payment</button>
+  </div>`;
+}
+function onPayMethodChange(){
+  const v = document.getElementById('pay-method').value;
+  const el = document.getElementById('online-fields');
+  if (el) el.style.display = v==='online' ? 'grid' : 'none';
+}
+function downloadQR(rollNo){
+  const holder = document.getElementById('qr-canvas-holder'); const canvas = holder ? holder.querySelector('canvas') : null;
+  if (!canvas){ toast('QR not ready yet — try again in a moment.','error'); return; }
+  const link = document.createElement('a'); link.download = `${rollNo}-qr.png`; link.href = canvas.toDataURL('image/png'); link.click();
+}
+function idCardHTML(s){
+  const safeRoll = safeId(s.roll_no);
+  const contacts = parseContacts(s.contacts);
+  const firstPhone = contacts.length? contacts[0].phone : '';
+  return `<div class="id-card"><div class="id-card-head">Hostel Register · Student ID</div>
+    <div class="id-card-body"><div id="printqr-${safeRoll}" class="id-qr"></div>
+      <div class="id-info"><div class="id-name">${esc(s.name)}</div><div class="id-roll">${esc(s.roll_no)}</div>
+        <div class="id-meta">Room ${esc(s.room||'—')} · ${esc(s.course||'—')}</div>
+        <div class="id-meta">${esc(firstPhone)}</div></div></div></div>`;
+}
+function printIDCard(rollNo){
+  const s = state.students.find(x=>x.roll_no.toLowerCase()===rollNo.toLowerCase());
+  if (!s){ toast('Student not found.','error'); return; }
+  document.getElementById('print-area').innerHTML = `<div class="id-cards-grid">${idCardHTML(s)}</div>`;
+  setTimeout(()=>{ renderQRInto(`printqr-${safeId(s.roll_no)}`, s.roll_no); setTimeout(()=>window.print(),150); }, 50);
+}
+function printAllIDCards(){
+  const list = filteredStudents();
+  if (!list.length){ toast('No students to print.','error'); return; }
+  document.getElementById('print-area').innerHTML = `<div class="id-cards-grid">${list.map(idCardHTML).join('')}</div>`;
+  toast(`Preparing ${list.length} ID card(s)…`,'success');
+  setTimeout(()=>{ list.forEach(s=>renderQRInto(`printqr-${safeId(s.roll_no)}`, s.roll_no)); setTimeout(()=>window.print(),250); }, 60);
+}
+
+/* ============================================================
+   BULK IMPORT / EXPORT (admin only)
+   ============================================================ */
+function openBulkImport(){ state.modal={type:'bulkImport'}; update(); }
+function bulkImportModalHTML(){
+  return `<div class="modal-overlay" onclick="if(event.target===this) closeModal()">
+    <div class="modal modal-lg">
+      <h3>Bulk import students</h3>
+      <p class="muted">One student per line: <span class="mono">RollNo,Name,Room,Course,FatherName,MotherName,Phone,FeeMode,FeeTotal,FeePaid</span></p>
+      <button class="link-btn" onclick="downloadCSVTemplate()">Download template</button>
+      <textarea id="csv-textarea" class="csv-textarea" rows="10" placeholder="BCA2024015,Aman Kumar,B-12,BCA,Ram Kumar,Sita Devi,9876543210,onetime,60000,30000"></textarea>
+      <p class="muted">Photos, gender and batch aren't included in bulk import — add them individually via Edit afterward.</p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" id="import-btn" onclick="parseAndImportCSV()">Import</button>
+      </div>
+    </div>
+  </div>`;
+}
+function downloadCSVTemplate(){
+  downloadTextFile('RollNo,Name,Room,Course,FatherName,MotherName,Phone,FeeMode,FeeTotal,FeePaid\nBCA2024015,Aman Kumar,B-12,BCA,Ram Kumar,Sita Devi,9876543210,onetime,60000,30000', 'student-import-template.csv', 'text/csv');
+}
+async function parseAndImportCSV(){
+  const raw = document.getElementById('csv-textarea').value;
+  const lines = raw.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+  const btn = document.getElementById('import-btn'); if (btn){ btn.disabled=true; btn.textContent='Importing…'; }
+  let added=0, skipped=0;
+  const existingRolls = new Set(state.students.map(s=>s.roll_no.toLowerCase()));
+  const rowsToInsert = [];
+  lines.forEach((line,i)=>{
+    if (i===0 && /roll/i.test(line) && /name/i.test(line)) return;
+    const parts = line.split(',').map(p=>p.trim());
+    const [rollNo,name,room,course,father,mother,phone,feeMode,feeTotal,feePaid] = parts;
+    if (!rollNo || !name || existingRolls.has(rollNo.toLowerCase())){ skipped++; return; }
+    rowsToInsert.push({ roll_no:rollNo, name, room:room||'', course:course||'', father_name:father||'', mother_name:mother||'',
+      contacts: phone? [{label:'Student',phone:phone}] : [], fee_mode: (feeMode==='monthly'?'monthly':'onetime'),
+      fee_total:parseFloat(feeTotal)||0, fee_paid:parseFloat(feePaid)||0 });
+    existingRolls.add(rollNo.toLowerCase());
+    added++;
+  });
+  try{
+    if (rowsToInsert.length) await sbInsert('students', rowsToInsert);
+    await sbInsert('activity_log', { type:'student_add', details:`Bulk import: ${added} added, ${skipped} skipped`, by_name: state.user.name });
+    closeModal();
+    toast(`${added} student(s) added${skipped?`, ${skipped} skipped`:''}.`,'success');
+    await Promise.all([loadStudents(), loadActivity()]);
+  }catch(e){ toast(e.message,'error'); }
+  update();
+}
+function exportCSV(){
+  const header = 'RollNo,Name,Room,Course,FatherName,MotherName,Address,FeeMode,FeeTotal,FeePaid';
+  const rows = state.students.map(s=>[s.roll_no,s.name,s.room,s.course,s.father_name,s.mother_name,s.address,s.fee_mode,s.fee_total,s.fee_paid].map(csvEscape).join(','));
+  downloadTextFile([header,...rows].join('\n'), 'hostel-students-backup.csv', 'text/csv');
+}
+
+/* ============================================================
+   LEAVES TAB + GRANT LEAVE (now via RPC: token + duplicate guard)
+   ============================================================ */
+function renderLeavesTab(){
+  const filtered = filterByDate(state.leaves, state.leaveDateFrom, state.leaveDateTo, 'created_at');
+  const outNow = filtered.filter(l=>l.status==='out');
+  const history = filtered.filter(l=>l.status!=='out').slice(0,150);
+  const canGrant = canDo('grant_leave');
+  return `<div class="toolbar">
+    <div class="manual-row">
+      <input type="date" class="date-input" id="leave-from" value="${state.leaveDateFrom||''}" onchange="setLeaveDateFilter(this.value, document.getElementById('leave-to').value)" />
+      <input type="date" class="date-input" id="leave-to" value="${state.leaveDateTo||''}" onchange="setLeaveDateFilter(document.getElementById('leave-from').value, this.value)" />
+    </div>
+    <div class="toolbar-actions">${canGrant? `<button class="btn btn-primary" onclick="openGrantLeaveModal(null)">Grant leave</button>` : ''}</div>
+  </div>
+  <div class="card" style="margin-bottom:18px;"><h3>Currently out (${outNow.length})</h3>
+    ${outNow.length? `<table class="table"><tbody>${outNow.map(renderLeaveRow).join('')}</tbody></table>` : `<p class="empty-hint">No one is currently out.</p>`}
+  </div>
+  <div class="card no-pad"><table class="table"><thead><tr><th>Student</th><th>Status</th><th>Token</th><th>Reason</th><th>Granted by</th><th>Times</th></tr></thead>
+    <tbody>${history.length? history.map(renderLeaveRow).join('') : `<tr><td colspan="6" class="empty-hint">No leave history in this range.</td></tr>`}</tbody></table></div>`;
+}
+function renderLeaveRow(l){
+  const stu = l.students || {};
+  return `<tr>
+    <td>${esc(stu.name||'')} <span class="muted mono">${esc(stu.roll_no||'')}</span></td>
+    <td><span class="badge badge-${leaveBadgeClass(l.status)}">${esc(l.status)}</span></td>
+    <td class="mono">${esc(l.token||'—')}</td>
+    <td class="muted">${esc(l.reason||'—')}</td>
+    <td class="muted">${esc(l.granted_by_name||'')}</td>
+    <td class="muted">${l.out_at?'Out: '+fmtTime(l.out_at):''}${l.in_at?'<br>In: '+fmtTime(l.in_at):''}</td>
+  </tr>`;
+}
+function setLeaveDateFilter(from,to){ state.leaveDateFrom=from||null; state.leaveDateTo=to||null; update(); }
+function openGrantLeaveModal(rollNo){
+  if (!canDo('grant_leave')){ toast("You don't have permission to grant leave. Ask your admin.","error"); return; }
+  state.modal = { type:'grantLeave', rollNo };
+  update();
+}
+function grantLeaveModalHTML(rollNo){
+  const options = state.students.map(s=>`<option value="${escAttr(s.roll_no)}" ${rollNo===s.roll_no?'selected':''}>${esc(s.roll_no)} — ${esc(s.name)}</option>`).join('');
+  return `<div class="modal-overlay" onclick="if(event.target===this) closeModal()">
+    <div class="modal">
+      <h3>Grant leave</h3>
+      <div class="form-grid">
+        ${rollNo? `<label>Student<input value="${esc(rollNo)}" readonly /></label><input type="hidden" id="leave-rollno" value="${escAttr(rollNo)}" />` :
+          `<label>Student<select id="leave-rollno">${options}</select></label>`}
+        <label>Reason (optional)<input id="leave-reason" placeholder="e.g. Going home for the weekend" /></label>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" id="grant-leave-btn" onclick="submitGrantLeave()">Grant leave</button>
+      </div>
+    </div>
+  </div>`;
+}
+async function submitGrantLeave(){
+  const rollNo = document.getElementById('leave-rollno').value.trim();
+  const reason = document.getElementById('leave-reason').value.trim();
+  if (!rollNo){ toast('Choose a student.','error'); return; }
+  const btn = document.getElementById('grant-leave-btn'); if (btn){ btn.disabled=true; btn.textContent='Granting…'; }
+  try{
+    const token = await sbRpc('grant_leave', { p_roll_no: rollNo, p_reason: reason });
+    closeModal();
+    toast(`Leave granted — gate-pass token: ${token}`,'success');
+    await Promise.all([loadLeaves(), loadActivity()]);
+  }catch(e){ toast(e.message,'error'); if (btn){ btn.disabled=false; btn.textContent='Grant leave'; } }
+  update();
+}
+
+/* ============================================================
+   TRANSACTIONS TAB (admin sees all; recorded_by_name is denormalized)
+   ============================================================ */
+async function loadAllPayments(){ try{ return await sbSelect('payments', '?select=*,students(roll_no,name)&order=created_at.desc&limit=500'); }catch(e){ return []; } }
+function renderTransactionsTab(){
+  if (!state._allPayments){ loadAllPayments().then(p=>{ state._allPayments=p; update(); }); return `<div class="card"><p class="empty-hint">Loading transactions…</p></div>`; }
+  const isRecycle = state.txnView==='recycle';
+  const byView = state._allPayments.filter(p=> isRecycle ? p.archived : !p.archived);
+  const filtered = filterByDate(byView, state.txnDateFrom, state.txnDateTo, 'created_at');
+  const total = filtered.reduce((s,p)=>s+(p.amount||0),0);
+  return `<div class="toolbar">
+    <div class="manual-row">
+      <input type="date" class="date-input" id="txn-from" value="${state.txnDateFrom||''}" onchange="setTxnDateFilter(this.value, document.getElementById('txn-to').value)" />
+      <input type="date" class="date-input" id="txn-to" value="${state.txnDateTo||''}" onchange="setTxnDateFilter(document.getElementById('txn-from').value, this.value)" />
+      <div class="segmented">
+        <button class="${!isRecycle?'active':''}" onclick="setTxnView('active')">Active</button>
+        <button class="${isRecycle?'active':''}" onclick="setTxnView('recycle')">Recycle bin</button>
+      </div>
+    </div>
+    <div class="toolbar-actions"><span class="muted">Total: <b>${fmtMoney(total)}</b></span><button class="btn btn-secondary" onclick="state._allPayments=null; update();">Refresh</button></div>
+  </div>
+  <div class="card no-pad"><table class="table"><thead><tr><th>Student</th><th>Amount</th><th>Method</th><th>Details</th><th>By</th><th>When</th><th></th></tr></thead>
+    <tbody>${filtered.length? filtered.map(p=>{ const stu=p.students||{}; return `<tr>
+      <td>${esc(stu.name||'')} <span class="muted mono">${esc(stu.roll_no||'')}</span></td>
+      <td>${fmtMoney(p.amount)}</td>
+      <td><span class="badge badge-payment">${esc(p.payment_method||'cash')}</span></td>
+      <td class="muted">${p.payment_method==='online'? esc((p.bank_name||'')+(p.transaction_uid?' · '+p.transaction_uid:'')) : esc(p.note||'')}</td>
+      <td class="muted">${esc(p.recorded_by_name||'')}</td>
+      <td class="muted">${fmtTime(p.created_at)}</td>
+      <td class="row-actions">${isRecycle? `<button class="icon-btn" onclick="restorePaymentAction('${escAttr(p.id)}','all')">Restore</button>` : `<button class="icon-btn" onclick="openEditPaymentModal('${escAttr(p.id)}','all')">Edit</button><button class="icon-btn icon-danger" onclick="archivePaymentAction('${escAttr(p.id)}','all')">Bin</button>`}</td>
+    </tr>`; }).join('') : `<tr><td colspan="7" class="empty-hint">No transactions in this range.</td></tr>`}</tbody></table></div>`;
+}
+function setTxnDateFilter(from,to){ state.txnDateFrom=from||null; state.txnDateTo=to||null; state._allPayments=null; update(); }
+function setTxnView(v){ state.txnView=v; update(); }
+
+/* ============================================================
+   EDIT / ARCHIVE / RESTORE TRANSACTION (admin only)
+   ============================================================ */
+function openEditPaymentModal(paymentId, source){
+  let list = [];
+  if (source==='profile' && state.modal && state.modal.payments) list = state.modal.payments;
+  else if (source==='all') list = state._allPayments || [];
+  else if (source==='mine') list = state._myPayments || [];
+  const p = list.find(x=>x.id===paymentId);
+  if (!p){ toast('Transaction not found.','error'); return; }
+  const returnTo = (source==='profile' && state.modal) ? state.modal.student.roll_no : null;
+  state.modal = { type:'editPayment', payment:p, returnTo };
+  update();
+}
+function editPaymentModalHTML(p){
+  return `<div class="modal-overlay" onclick="if(event.target===this) closeModal()"><div class="modal">
+    <h3>Edit transaction</h3>
+    <div class="form-grid two-col">
+      <label>Amount (₹)<input id="ep-amount" type="number" value="${p.amount}" /></label>
+      <label>Method<select id="ep-method" onchange="onEpMethodChange()"><option value="cash" ${p.payment_method==='cash'?'selected':''}>Cash</option><option value="online" ${p.payment_method==='online'?'selected':''}>Online</option></select></label>
+    </div>
+    <div id="ep-online-fields" style="display:${p.payment_method==='online'?'grid':'none'};" class="form-grid two-col">
+      <label>Transaction UID<input id="ep-uid" value="${esc(p.transaction_uid||'')}" /></label>
+      <label>Bank<input id="ep-bank" value="${esc(p.bank_name||'')}" /></label>
+    </div>
+    <div class="form-grid"><label>Note<input id="ep-note" value="${esc(p.note||'')}" /></label></div>
+    <p class="muted">Changing the amount automatically adjusts the student's total paid.</p>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" id="ep-btn" onclick="submitEditPayment('${escAttr(p.id)}')">Save changes</button></div>
+  </div></div>`;
+}
+function onEpMethodChange(){ const v=document.getElementById('ep-method').value; document.getElementById('ep-online-fields').style.display = v==='online'?'grid':'none'; }
+async function submitEditPayment(id){
+  const amount = parseFloat(document.getElementById('ep-amount').value);
+  const method = document.getElementById('ep-method').value;
+  const uid = document.getElementById('ep-uid') ? document.getElementById('ep-uid').value.trim() : '';
+  const bank = document.getElementById('ep-bank') ? document.getElementById('ep-bank').value.trim() : '';
+  const note = document.getElementById('ep-note').value.trim();
+  if (!amount || amount<=0){ toast('Enter a valid amount.','error'); return; }
+  const btn = document.getElementById('ep-btn'); if (btn){ btn.disabled=true; btn.textContent='Saving…'; }
+  const returnTo = state.modal && state.modal.returnTo;
+  try{
+    await sbRpc('edit_payment', { p_payment_id:id, p_new_amount:amount, p_new_note:note, p_new_method:method, p_new_uid:uid, p_new_bank:bank });
+    toast('Transaction updated.','success');
+    state._allPayments=null; state._myPayments=null;
+    await loadStudents();
+    if (returnTo){ openStudentProfile(returnTo); } else { closeModal(); }
+  }catch(e){ toast(e.message,'error'); if (btn){ btn.disabled=false; btn.textContent='Save changes'; } }
+}
+function archivePaymentAction(id, source){
+  const returnTo = (source==='profile' && state.modal) ? state.modal.student.roll_no : null;
+  confirmAction("Move this transaction to the recycle bin? The amount will be subtracted from the student's paid total.", async ()=>{
+    try{
+      await sbRpc('archive_payment', { p_payment_id:id });
+      toast('Transaction moved to recycle bin.','success');
+      state._allPayments=null; state._myPayments=null;
+      await loadStudents();
+      if (returnTo) openStudentProfile(returnTo); else update();
+    }catch(e){ toast(e.message,'error'); update(); }
+  });
+}
+function restorePaymentAction(id, source){
+  const returnTo = (source==='profile' && state.modal) ? state.modal.student.roll_no : null;
+  confirmAction("Restore this transaction? The amount will be added back to the student's paid total.", async ()=>{
+    try{
+      await sbRpc('restore_payment', { p_payment_id:id });
+      toast('Transaction restored.','success');
+      state._allPayments=null; state._myPayments=null;
+      await loadStudents();
+      if (returnTo) openStudentProfile(returnTo); else update();
+    }catch(e){ toast(e.message,'error'); update(); }
+  });
+}
+
+/* ============================================================
+   STAFF TAB (admin — manage admin/accountant/gatekeeper profiles + permissions)
+   ============================================================ */
+function renderStaffTab(){
+  return `<div class="card" style="margin-bottom:18px;"><h3>Add staff</h3>
+    <p class="muted">Create their login in Supabase: <span class="mono">Authentication → Users → Add user</span>. They'll appear below automatically as an Accountant — set their name, role and permissions here.</p>
+  </div>
+  <div class="card no-pad"><table class="table"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Permissions (accountants only)</th><th>Status</th><th></th></tr></thead>
+    <tbody>${state.accounts.map(renderAccountRow).join('')}</tbody></table></div>`;
+}
+function renderAccountRow(a){
+  const isSelf = a.id === state.user.id;
+  const perms = a.permissions || {};
+  return `<tr>
+    <td><input class="inline-edit" value="${esc(a.name)}" onchange="updateProfileField('${escAttr(a.id)}','name',this.value)" /></td>
+    <td class="mono muted">${esc(a.email||'')}</td>
+    <td><select class="inline-edit" ${isSelf?'disabled':''} onchange="updateProfileField('${escAttr(a.id)}','role',this.value)">
+      <option value="accountant" ${a.role==='accountant'?'selected':''}>Accountant</option>
+      <option value="admin" ${a.role==='admin'?'selected':''}>Admin</option>
+      <option value="gatekeeper" ${a.role==='gatekeeper'?'selected':''}>Gatekeeper</option>
+    </select></td>
+    <td>${a.role==='accountant'? `<div class="perm-checks">
+      <label><input type="checkbox" ${perms.add_student?'checked':''} onchange="updatePermission('${escAttr(a.id)}','add_student',this.checked)" /> Add student</label>
+      <label><input type="checkbox" ${perms.grant_leave?'checked':''} onchange="updatePermission('${escAttr(a.id)}','grant_leave',this.checked)" /> Grant leave</label>
+      <label><input type="checkbox" ${perms.record_payment?'checked':''} onchange="updatePermission('${escAttr(a.id)}','record_payment',this.checked)" /> Record payment</label>
+    </div>` : '<span class="muted">—</span>'}</td>
+    <td>${a.active!==false? '<span class="text-paid">Active</span>' : '<span class="text-due">Disabled</span>'}</td>
+    <td class="row-actions">${!isSelf? `<button class="icon-btn ${a.active!==false?'icon-danger':''}" onclick="toggleAccountActive('${escAttr(a.id)}', ${a.active!==false})">${a.active!==false?'Disable':'Enable'}</button>` : '<span class="muted">You</span>'}</td>
+  </tr>`;
+}
+async function updateProfileField(id, field, value){
+  try{ await sbUpdate('profiles', `?id=eq.${id}`, { [field]: value }); toast('Updated.','success'); await loadProfiles(); update(); }
+  catch(e){ toast(e.message,'error'); }
+}
+async function updatePermission(id, perm, checked){
+  const acc = state.accounts.find(a=>a.id===id);
+  const perms = Object.assign({}, acc ? acc.permissions : {}, { [perm]: checked });
+  try{ await sbUpdate('profiles', `?id=eq.${id}`, { permissions: perms }); toast('Permission updated.','success'); await loadProfiles(); }
+  catch(e){ toast(e.message,'error'); }
+  update();
+}
+function toggleAccountActive(id, currentlyActive){
+  confirmAction(`${currentlyActive?'Disable':'Enable'} this account?`, async ()=>{
+    try{ await sbUpdate('profiles', `?id=eq.${id}`, { active: !currentlyActive }); toast('Updated.','success'); await loadProfiles(); }
+    catch(e){ toast(e.message,'error'); }
+    update();
+  });
+}
+function renderActivityTab(){
+  return `<div class="card no-pad"><table class="table"><thead><tr><th>Type</th><th>Details</th><th>By</th><th>When</th></tr></thead>
+    <tbody>${state.activity.length? state.activity.map(renderActivityRow).join('') : `<tr><td colspan="4" class="empty-hint">No activity yet.</td></tr>`}</tbody></table></div>`;
+}
+
+/* ============================================================
+   LOGIN REQUESTS TAB (admin)
+   ============================================================ */
+function renderRequestsTab(){
+  const pending = state.loginRequests.filter(r=>r.status==='pending');
+  const decided = state.loginRequests.filter(r=>r.status!=='pending').slice(0,40);
+  return `<div class="card" style="margin-bottom:18px;"><h3>Pending (${pending.length})</h3>
+    ${pending.length? pending.map(r=>`<div class="card" style="margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+      <div><b>${esc(r.email||'')}</b><div class="muted">${esc(r.device_info||'')} · ${fmtTime(r.requested_at)}</div></div>
+      <div class="row-actions"><button class="btn btn-secondary btn-sm" onclick="decideLoginRequest('${escAttr(r.id)}','approved')">Approve</button><button class="btn btn-danger btn-sm" onclick="decideLoginRequest('${escAttr(r.id)}','denied')">Deny</button></div>
+    </div>`).join('') : `<p class="empty-hint">No pending requests.</p>`}
+  </div>
+  <div class="card no-pad"><table class="table"><thead><tr><th>Email</th><th>Status</th><th>Decided</th><th>By</th></tr></thead>
+    <tbody>${decided.length? decided.map(r=>`<tr><td>${esc(r.email||'')}</td><td><span class="badge badge-${r.status==='approved'?'student_restore':'student_archive'}">${esc(r.status)}</span></td><td class="muted">${fmtTime(r.decided_at)}</td><td class="muted">${esc(r.decided_by_name||'')}</td></tr>`).join('') : `<tr><td colspan="4" class="empty-hint">No history yet.</td></tr>`}</tbody></table></div>`;
+}
+async function decideLoginRequest(id, status){
+  try{ await sbUpdate('login_requests', `?id=eq.${id}`, { status, decided_at:new Date().toISOString(), decided_by_name: state.user.name }); toast('Updated.','success'); await loadLoginRequests(); }
+  catch(e){ toast(e.message,'error'); }
+  update();
+}
+
+/* ============================================================
+   ACCOUNTANT SHELL
+   ============================================================ */
+function renderAccountantShell(){
+  return `<div class="acc-shell">${renderTopbar()}
+    <div class="acc-tabs">
+      <button class="tab-btn ${state.accTab==='scan'?'active':''}" onclick="setAccTab('scan')">Scan</button>
+      <button class="tab-btn ${state.accTab==='students'?'active':''}" onclick="setAccTab('students')">Students</button>
+      <button class="tab-btn ${state.accTab==='leaves'?'active':''}" onclick="setAccTab('leaves')">Leaves</button>
+      <button class="tab-btn ${state.accTab==='myactivity'?'active':''}" onclick="setAccTab('myactivity')">My activity</button>
+    </div>
+    <main class="main acc-main">${
+      state.accTab==='scan'?renderScanTab():
+      state.accTab==='students'?renderStudentsTab():
+      state.accTab==='leaves'?renderLeavesTab():
+      renderMyActivityTab()
+    }</main>
+  </div>${renderModal()}${renderToast()}${renderLightbox()}`;
+}
+function setAccTab(tab){
+  if (state.accTab==='scan' && state.scanning) stopCamera();
+  state.accTab=tab; state.scanning=false; state.scanResult=null; state.search='';
+  update();
+  if (tab==='leaves') loadLeaves().then(update);
+  if (tab==='myactivity') state._myPayments=null;
+}
+function renderManualEntry(){
+  return `<div class="manual-entry"><p class="muted">Or enter the roll number manually:</p>
+    <div class="manual-row"><input id="manual-roll" class="manual-input mono" placeholder="e.g. BCA2024015" onkeydown="if(event.key==='Enter') submitManualLookup()" />
+    <button class="btn btn-secondary" onclick="submitManualLookup()">Look up</button></div></div>`;
+}
+function renderScanTab(){
+  if (state.scanning){
+    return `<div class="scan-panel"><div class="scan-frame"><div id="qr-reader"></div><div class="frame-corners"></div></div>
+      <p class="muted">Point the camera at the student's QR code.</p>
+      <button class="btn btn-ghost" onclick="cancelScan()">Cancel</button>${renderManualEntry()}</div>`;
+  }
+  return `<div class="scan-panel scan-idle"><div class="scan-hero"><div class="scan-hero-icon">▣</div><h2>Scan a student ID</h2>
+    <p class="muted">Scanning opens their full profile immediately.</p>
+    <button class="btn btn-primary btn-lg" onclick="startScan()">Start camera scan</button></div>${renderManualEntry()}</div>`;
+}
+function startScan(){ state.scanning=true; update(); setTimeout(initCamera,60); }
+function initCamera(){
+  if (typeof Html5Qrcode==='undefined'){ toast('Camera library failed to load. Check your connection and reload.','error'); state.scanning=false; update(); return; }
+  try{
+    html5QrCode = new Html5Qrcode('qr-reader');
+    html5QrCode.start({ facingMode:'environment' }, { fps:10, qrbox:240 }, (decodedText)=>{ handleScanSuccess(decodedText); }, ()=>{})
+      .catch(err=>{ toast('Could not access the camera: '+(err.message||err),'error'); state.scanning=false; update(); });
+  }catch(err){ toast('Could not start the camera.','error'); state.scanning=false; update(); }
+}
+function stopCamera(){ if (html5QrCode){ try{ html5QrCode.stop().then(()=>{ try{ html5QrCode.clear(); }catch(e){} }).catch(()=>{}); }catch(e){} } }
+function cancelScan(){ stopCamera(); state.scanning=false; update(); }
+function handleScanSuccess(decodedText){
+  stopCamera(); state.scanning=false;
+  if (state.user.role==='gatekeeper') gateLookup(decodedText);
+  else scanLookup(decodedText);
+}
+function submitManualLookup(){
+  const val=document.getElementById('manual-roll').value.trim(); if(!val){ toast('Enter a roll number first.','error'); return; }
+  if (state.user.role==='gatekeeper') gateLookup(val); else scanLookup(val);
+}
+async function scanLookup(code){
+  const normalized = String(code).trim();
+  try{
+    let rows = state.students.filter(s=>s.roll_no.toLowerCase()===normalized.toLowerCase());
+    if (!rows.length){ await loadStudents(); rows = state.students.filter(s=>s.roll_no.toLowerCase()===normalized.toLowerCase()); }
+    if (rows.length){
+      buzz(60);
+      sbRpc('log_scan', { p_roll_no: rows[0].roll_no, p_student_name: rows[0].name }).then(()=>loadActivity()).catch(()=>{});
+      openStudentProfile(rows[0].roll_no);
+    } else {
+      toast(`No student matches code "${normalized}".`,'error');
+    }
+  }catch(e){ toast('Lookup failed: '+e.message,'error'); }
+}
+function renderMyActivityTab(){
+  if (state.user.role==='gatekeeper'){
+    const mineActivity = filterByDate(state.activity.filter(a=>a.by_name===state.user.name), state.myTxnDateFrom, state.myTxnDateTo, 'created_at').slice(0,80);
+    return `<div class="toolbar"><div class="manual-row">
+      <input type="date" class="date-input" id="myt-from" value="${state.myTxnDateFrom||''}" onchange="setMyTxnDateFilter(this.value, document.getElementById('myt-to').value)" />
+      <input type="date" class="date-input" id="myt-to" value="${state.myTxnDateTo||''}" onchange="setMyTxnDateFilter(document.getElementById('myt-from').value, this.value)" />
+    </div></div>
+    <div class="card no-pad"><table class="table"><thead><tr><th>Type</th><th>Details</th><th>When</th></tr></thead>
+      <tbody>${mineActivity.length? mineActivity.map(a=>`<tr><td><span class="badge badge-${a.type}">${esc(activityLabel(a.type))}</span></td><td>${esc(a.details||'')}</td><td class="muted">${fmtTime(a.created_at)}</td></tr>`).join('') : `<tr><td colspan="3" class="empty-hint">No activity yet.</td></tr>`}</tbody></table></div>`;
+  }
+  if (!state._myPayments){ loadMyPayments().then(p=>{ state._myPayments=p; update(); }); return `<div class="card"><p class="empty-hint">Loading…</p></div>`; }
+  const filtered = filterByDate(state._myPayments, state.myTxnDateFrom, state.myTxnDateTo, 'created_at');
+  const total = filtered.reduce((s,p)=>s+(p.amount||0),0);
+  const mineActivity = filterByDate(state.activity.filter(a=>a.by_name===state.user.name), state.myTxnDateFrom, state.myTxnDateTo, 'created_at').slice(0,50);
+  return `<div class="toolbar">
+    <div class="manual-row">
+      <input type="date" class="date-input" id="myt-from" value="${state.myTxnDateFrom||''}" onchange="setMyTxnDateFilter(this.value, document.getElementById('myt-to').value)" />
+      <input type="date" class="date-input" id="myt-to" value="${state.myTxnDateTo||''}" onchange="setMyTxnDateFilter(document.getElementById('myt-from').value, this.value)" />
+    </div>
+    <div class="toolbar-actions"><span class="muted">My total in range: <b>${fmtMoney(total)}</b></span></div>
+  </div>
+  <div class="card no-pad" style="margin-bottom:18px;"><table class="table"><thead><tr><th>Student</th><th>Amount</th><th>Method</th><th>When</th></tr></thead>
+    <tbody>${filtered.length? filtered.map(p=>{ const stu=p.students||{}; return `<tr><td>${esc(stu.name||'')} <span class="muted mono">${esc(stu.roll_no||'')}</span></td><td>${fmtMoney(p.amount)}</td><td><span class="badge badge-payment">${esc(p.payment_method)}</span></td><td class="muted">${fmtTime(p.created_at)}</td></tr>`; }).join('') : `<tr><td colspan="4" class="empty-hint">No payments in this range.</td></tr>`}</tbody></table></div>
+  <div class="card no-pad"><table class="table"><thead><tr><th>Type</th><th>Details</th><th>When</th></tr></thead>
+    <tbody>${mineActivity.length? mineActivity.map(a=>`<tr><td><span class="badge badge-${a.type}">${esc(activityLabel(a.type))}</span></td><td>${esc(a.details||'')}</td><td class="muted">${fmtTime(a.created_at)}</td></tr>`).join('') : `<tr><td colspan="3" class="empty-hint">No activity yet.</td></tr>`}</tbody></table></div>`;
+}
+async function loadMyPayments(){ try{ return await sbSelect('payments', `?recorded_by=eq.${state.user.id}&archived=eq.false&select=*,students(roll_no,name)&order=created_at.desc&limit=400`); }catch(e){ return []; } }
+function setMyTxnDateFilter(from,to){ state.myTxnDateFrom=from||null; state.myTxnDateTo=to||null; update(); }
+async function recordPayment(rollNo){
+  const amount = parseFloat(document.getElementById('pay-amount').value);
+  const method = document.getElementById('pay-method').value;
+  const uid = document.getElementById('pay-uid') ? document.getElementById('pay-uid').value.trim() : '';
+  const bank = document.getElementById('pay-bank') ? document.getElementById('pay-bank').value.trim() : '';
+  const note = document.getElementById('pay-note').value.trim();
+  if (!amount || amount<=0){ toast('Enter a valid amount.','error'); return; }
+  if (method==='online' && (!uid || !bank)){ toast('Enter the transaction UID and bank for online payments.','error'); return; }
+  const btn = document.getElementById('pay-btn'); if (btn){ btn.disabled=true; btn.textContent='Recording…'; }
+  try{
+    await sbRpc('record_payment', { p_roll_no: rollNo, p_amount: amount, p_note: note, p_method: method, p_uid: uid, p_bank: bank });
+    closeModal();
+    state._myPayments=null; state._allPayments=null;
+    await loadStudents();
+    await loadActivity();
+    const updated = state.students.find(s=>s.roll_no.toLowerCase()===rollNo.toLowerCase());
+    const nowDue = updated ? Math.max(0,(updated.fee_total||0)-(updated.fee_paid||0)) : null;
+    if (nowDue===0){ buzz([50,40,50,40,80]); toast('Payment recorded — fully paid! 🎉','success'); }
+    else { buzz(50); toast('Payment recorded.','success'); }
+    openStudentProfile(rollNo);
+  }catch(e){ toast(e.message,'error'); if (btn){ btn.disabled=false; btn.textContent='Record payment'; } }
+}
+
+/* ============================================================
+   GATEKEEPER SHELL — photo + name + permission status ONLY
+   ============================================================ */
+function renderGateShell(){
+  return `<div class="acc-shell">${renderTopbar()}
+    <div class="acc-tabs">
+      <button class="tab-btn ${state.gateTab==='gate'?'active':''}" onclick="setGateTab('gate')">Gate</button>
+      <button class="tab-btn ${state.gateTab==='roster'?'active':''}" onclick="setGateTab('roster')">Leave Roster</button>
+      <button class="tab-btn ${state.gateTab==='myactivity'?'active':''}" onclick="setGateTab('myactivity')">My activity</button>
+    </div>
+    <main class="main acc-main">${
+      state.gateTab==='gate'?renderGateTab():
+      state.gateTab==='roster'?renderGateRosterTab():
+      renderMyActivityTab()
+    }</main>
+  </div>${renderModal()}${renderToast()}${renderLightbox()}`;
+}
+function setGateTab(tab){ if (state.gateTab==='gate' && state.scanning) stopCamera(); state.gateTab=tab; state.scanning=false; state.gateResult=null; update(); }
+function renderGateTab(){
+  if (state.gateResult) return state.gateResult.found ? renderGateResultCard(state.gateResult.student) : renderNotFoundCard(state.gateResult.code);
+  if (state.scanning){
+    return `<div class="scan-panel"><div class="scan-frame"><div id="qr-reader"></div><div class="frame-corners"></div></div>
+      <p class="muted">Point the camera at the student's QR code.</p>
+      <button class="btn btn-ghost" onclick="cancelScan()">Cancel</button>${renderManualEntry()}</div>`;
+  }
+  return `<div class="scan-panel scan-idle"><div class="scan-hero"><div class="scan-hero-icon">▣</div><h2>Mark a student out / in</h2>
+    <p class="muted">Scan their ID to check current leave status.</p>
+    <button class="btn btn-primary btn-lg" onclick="startScan()">Start camera scan</button></div>${renderManualEntry()}</div>`;
+}
+async function gateLookup(code){
+  try{
+    const rows = await sbRpc('gatekeeper_lookup', { p_roll_no: String(code).trim() });
+    const student = rows && rows[0];
+    if (student){ buzz(student.leave_status==='out' ? [40,60,40] : 60); state.gateResult = { found:true, student }; update(); }
+    else { buzz([20,40,20,40,20]); state.gateResult = { found:false, code }; update(); }
+  }catch(e){ toast('Lookup failed: '+e.message,'error'); }
+}
+function renderGateResultCard(s){
+  const status = s.leave_status;
+  return `<div class="result-card">
+    <div class="stamp ${status==='out'?'stamp-amber':''}">${status==='out'?'● CURRENTLY OUT':'✓ FOUND'}</div>
+    <div class="profile-head">
+      <div class="profile-photo" id="gate-photo-holder" onclick="openPhotoLightbox(this)" style="background:${avatarColor(s.name)}">${esc(initials(s.name))}</div>
+      <div><div class="profile-name">${esc(s.name)}</div><div class="profile-roll">${esc(s.roll_no)}</div></div>
+    </div>
+    <div class="profile-section-title">Permission status</div>
+    <p>${status==='approved'? `<span class="badge badge-approved">Permitted to leave</span> — token <b class="mono">${esc(s.token||'')}</b>` :
+        status==='out'? `<span class="badge badge-out">Currently out</span> — token <b class="mono">${esc(s.token||'')}</b>` :
+        `<span class="muted">No approved leave for this student right now.</span>`}</p>
+    <div class="profile-actions">
+      ${status==='approved'? `<button class="btn btn-amber" onclick="doMarkOut('${escAttr(s.roll_no)}')">Mark OUT</button>` : ''}
+      ${status==='out'? `<button class="btn btn-primary" onclick="doMarkIn('${escAttr(s.roll_no)}')">Mark IN</button>` : ''}
+      <button class="btn btn-ghost" onclick="resetGate()">Scan another</button>
+    </div>
+  </div>`;
+}
+function renderNotFoundCard(code){
+  return `<div class="result-card result-error"><div class="stamp stamp-error">✕ NOT FOUND</div>
+    <p>No student matches the code <span class="mono">${esc(code)}</span>.</p>
+    <button class="btn btn-primary" onclick="resetGate()">Try again</button></div>`;
+}
+function resetGate(){ state.gateResult=null; update(); }
+async function doMarkOut(rollNo){
+  try{ await sbRpc('mark_leave_out', { p_roll_no: rollNo }); toast('Marked out.','success'); state._roster=null; gateLookup(rollNo); }
+  catch(e){ toast(e.message,'error'); }
+}
+async function doMarkIn(rollNo){
+  try{ await sbRpc('mark_leave_in', { p_roll_no: rollNo }); toast('Marked in.','success'); state._roster=null; gateLookup(rollNo); }
+  catch(e){ toast(e.message,'error'); }
+}
+async function loadGatekeeperRoster(){ try{ return await sbRpc('gatekeeper_active_leaves', {}); }catch(e){ return []; } }
+function renderGateRosterTab(){
+  if (!state._roster){ loadGatekeeperRoster().then(r=>{ state._roster=r; update(); }); return `<div class="card"><p class="empty-hint">Loading…</p></div>`; }
+  const rows = state._roster;
+  return `<div class="toolbar"><div></div><div class="toolbar-actions"><button class="btn btn-secondary" onclick="state._roster=null; update();">Refresh</button></div></div>
+  <p class="muted" style="margin-bottom:14px;">Everyone currently permitted to leave or already out — match faces here if a QR code is damaged or unavailable.</p>
+  <div class="student-grid">${rows.length? rows.map(r=>`<div class="student-card" style="cursor:default;">
+    <div class="student-card-top">
+      <div class="sc-avatar" data-roster-photo="${escAttr(r.roll_no)}" style="background:${avatarColor(r.name)}">${esc(initials(r.name))}</div>
+      <div><div class="sc-name">${esc(r.name)}</div><div class="sc-roll">${esc(r.roll_no)}</div></div>
+    </div>
+    <span class="out-pill" style="background:${r.status==='out'?'var(--red-soft)':'var(--amber-soft)'}; color:${r.status==='out'?'var(--red)':'var(--amber)'};">● ${r.status==='out'?'Out':'Permitted'} · token ${esc(r.token||'')}</span>
+  </div>`).join('') : `<p class="empty-hint">No one currently has an active leave.</p>`}</div>`;
+}
+function loadRosterPhotos(){
+  if (!state._roster) return;
+  document.querySelectorAll('[data-roster-photo]').forEach(el=>{
+    const roll = el.getAttribute('data-roster-photo');
+    if (el.querySelector('img')) return;
+    const r = state._roster.find(x=>x.roll_no===roll);
+    if (!r || !r.photo_path) return;
+    sbSignedUrl('student-photos', r.photo_path, 600).then(url=>{ if (url && el.isConnected) el.innerHTML = `<img src="${url}" alt="" />`; }).catch(()=>{});
+  });
+}
+
+/* ============================================================
+   MODAL DISPATCH
+   ============================================================ */
+function renderModal(){
+  if (!state.modal) return '';
+  switch(state.modal.type){
+    case 'studentForm': return studentFormModalHTML(state.modal.existing, state.modal.contacts);
+    case 'profile': return profileModalHTML(state.modal.student, state.modal.payments, state.modal.leaveHistory);
+    case 'archive': return archiveModalHTML(state.modal.rollNo);
+    case 'bulkImport': return bulkImportModalHTML();
+    case 'grantLeave': return grantLeaveModalHTML(state.modal.rollNo);
+    case 'batches': return batchesModalHTML();
+    case 'changepw': return changePasswordModalHTML();
+    case 'confirm': return `<div class="modal-overlay"><div class="modal modal-sm"><p>${esc(state.modal.message)}</p><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-danger" onclick="runConfirmedAction()">Confirm</button></div></div></div>`;
+    default: return '';
+  }
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+async function init(){
+  await loadTheme();
+  render();
+  await loadConfig();
+  if (!state.sbUrl || !state.sbAnonKey){ state.view='setup'; update(); return; }
+  await loadPersistedSession();
+  if (session){
+    try{
+      await getValidAccessToken();
+      await loadMyProfile();
+      if (state.user.role !== 'admin'){
+        // re-check whether our most recent login request (if any) is still pending/approved
+        try{
+          const rows = await sbSelect('login_requests', `?user_id=eq.${state.user.id}&select=*&order=requested_at.desc&limit=1`);
+          const latest = rows && rows[0];
+          if (!latest || latest.status==='denied'){
+            await requestLoginApproval();
+            state.view='waiting-approval'; update(); startApprovalPolling(); return;
+          } else if (latest.status==='pending'){
+            state.myLoginRequestId = latest.id;
+            state.view='waiting-approval'; update(); startApprovalPolling(); return;
+          }
+        }catch(e){}
+      }
+      state.view='app';
+      await loadAllForRole();
+    }catch(e){ await clearSession(); state.view='login'; }
+  } else { state.view='login'; }
+  update();
+}
+init();
+</script>
+</body>
+</html>
