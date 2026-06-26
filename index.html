@@ -254,6 +254,11 @@ a{color:var(--primary);}
 .scan-hero{margin-bottom:28px;}
 .scan-hero-icon{font-size:40px; margin-bottom:10px;}
 .scan-frame{position:relative; width:100%; max-width:320px; margin:0 auto 16px; aspect-ratio:1/1; background:#0B0C14; border-radius:18px; overflow:hidden;}
+.scan-feedback{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; z-index:5;}
+.scan-feedback-ok{background:rgba(31,157,111,.92);}
+.scan-feedback-err{background:rgba(224,72,61,.92);}
+.scan-feedback-icon{font-size:64px; font-weight:800; color:#fff; line-height:1;}
+.scan-feedback-text{font-size:14px; font-weight:600; color:#fff; padding:0 16px; text-align:center;}
 #qr-reader{width:100%; height:100%;}
 .frame-corners{position:absolute; inset:14px; border:2px solid rgba(255,255,255,.65); border-radius:12px; pointer-events:none;}
 .manual-entry{margin-top:24px; text-align:left;}
@@ -335,6 +340,7 @@ let state = {
   leaveDateFrom:null, leaveDateTo:null, txnDateFrom:null, txnDateTo:null,
   myTxnDateFrom:null, myTxnDateTo:null,
   loginRequests:[], myLoginRequestId:null,
+  attDate:null, attFeedback:null,
   theme:'light'
 };
 let session = null;
@@ -842,10 +848,12 @@ function renderAdminShell(){
   </div>${renderModal()}${renderToast()}${renderLightbox()}`;
 }
 function setAdminTab(tab){
-  state.adminTab=tab; state.search='';
+  if (state.adminTab==='attendance' && state.scanning) stopCamera();
+  state.adminTab=tab; state.search=''; state.scanning=false;
   update();
   if (tab==='leaves') loadLeaves().then(update);
   if (tab==='requests') loadLoginRequests().then(update);
+  if (tab==='attendance'){ if (!state.attDate) state.attDate = localDateStr(); loadAttendanceForDate(state.attDate).then(list=>{ state._attendanceList=list; update(); }); }
 }
 
 function renderActivityRow(a){
@@ -989,13 +997,13 @@ function openBatchesModal(){ state.modal={type:'batches'}; update(); }
 function batchesModalHTML(){
   return `<div class="modal-overlay" onclick="if(event.target===this) closeModal()"><div class="modal modal-lg">
     <h3>Manage batches</h3>
-    <p class="muted">A batch sets the default fee — assign a student to a batch and their fee mode/amount auto-fills (still editable per student).</p>
-    <table class="table"><thead><tr><th>Name</th><th>Code</th><th>Mode</th><th>Fee</th><th>Students</th><th></th></tr></thead>
+    <p class="muted">Each batch can offer both a monthly and a one-time fee. Assigning a student to a batch fills in whichever amount matches their chosen fee mode (still editable per student).</p>
+    <table class="table"><thead><tr><th>Name</th><th>Code</th><th>Monthly</th><th>One-time</th><th>Students</th><th></th></tr></thead>
     <tbody>${state.batches.length? state.batches.map(b=>{ const count = state.students.filter(s=>s.batch_id===b.id).length; return `<tr>
       <td data-label="Name">${esc(b.name)}</td>
       <td data-label="Code" class="mono muted">${esc(b.short_code||'—')}</td>
-      <td data-label="Mode" class="muted">${b.fee_mode==='monthly'?'Monthly':'One-time'}</td>
-      <td data-label="Fee">${fmtMoney(b.fee_amount)}</td>
+      <td data-label="Monthly">${b.monthly_fee_amount?fmtMoney(b.monthly_fee_amount):'—'}</td>
+      <td data-label="One-time">${b.onetime_fee_amount?fmtMoney(b.onetime_fee_amount):'—'}</td>
       <td data-label="Students" class="muted">${count}</td>
       <td data-label="" class="row-actions"><button class="icon-btn" onclick="openBatchAssignModal('${escAttr(b.id)}')">Manage students</button><button class="icon-btn icon-danger" onclick="deleteBatch('${escAttr(b.id)}')">Delete</button></td>
     </tr>`; }).join('') : `<tr><td colspan="6" class="empty-hint">No batches yet.</td></tr>`}</tbody></table>
@@ -1004,8 +1012,8 @@ function batchesModalHTML(){
     <div class="form-grid two-col">
       <label>Name<input id="batch-name" placeholder="e.g. 2024 Intake" /></label>
       <label>Short code<input id="batch-shortcode" placeholder="e.g. 24I" maxlength="12" /></label>
-      <label>Fee mode<select id="batch-feemode"><option value="onetime">One-time</option><option value="monthly">Monthly</option></select></label>
-      <label>Fee amount (₹)<input id="batch-fee" type="number" /></label>
+      <label>Monthly fee (₹)<input id="batch-monthly" type="number" placeholder="0 if not offered" /></label>
+      <label>One-time fee (₹)<input id="batch-onetime" type="number" placeholder="0 if not offered" /></label>
     </div>
     <button class="btn btn-primary" onclick="addBatch()">Add batch</button>
     <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Close</button></div>
@@ -1014,10 +1022,10 @@ function batchesModalHTML(){
 async function addBatch(){
   const name = document.getElementById('batch-name').value.trim();
   const shortCode = document.getElementById('batch-shortcode').value.trim();
-  const feeMode = document.getElementById('batch-feemode').value;
-  const fee = parseFloat(document.getElementById('batch-fee').value)||0;
+  const monthly = parseFloat(document.getElementById('batch-monthly').value)||0;
+  const onetime = parseFloat(document.getElementById('batch-onetime').value)||0;
   if (!name){ toast('Enter a batch name.','error'); return; }
-  try{ await sbInsert('batches',{name, short_code:shortCode||null, fee_mode:feeMode, fee_amount:fee}); toast('Batch added.','success'); await loadBatches(); }
+  try{ await sbInsert('batches',{name, short_code:shortCode||null, monthly_fee_amount:monthly, onetime_fee_amount:onetime}); toast('Batch added.','success'); await loadBatches(); }
   catch(e){ toast(e.message,'error'); }
   update();
 }
@@ -1028,12 +1036,14 @@ function deleteBatch(id){
     update();
   });
 }
-function onBatchChange(){
-  const id = document.getElementById('f-batch').value;
-  const batch = state.batches.find(b=>b.id===id);
+function onBatchChange(){ applyBatchFeeAmount(); }
+function applyBatchFeeAmount(){
+  const batchId = document.getElementById('f-batch').value;
+  const batch = state.batches.find(b=>b.id===batchId);
   if (!batch) return;
-  document.getElementById('f-feemode').value = batch.fee_mode;
-  document.getElementById('f-feetotal').value = batch.fee_amount;
+  const mode = document.getElementById('f-feemode').value;
+  const amount = mode==='monthly' ? batch.monthly_fee_amount : batch.onetime_fee_amount;
+  if (amount) document.getElementById('f-feetotal').value = amount;
 }
 
 /* ---------- Bulk-assign existing students to a batch ---------- */
@@ -1147,7 +1157,7 @@ function studentFormModalHTML(existing, contacts){
       <button type="button" class="link-btn" onclick="addContactRow()">+ Add another contact</button>
       <hr class="section-divider" />
       <div class="form-grid two-col">
-        <label>Fee mode<select id="f-feemode">
+        <label>Fee mode<select id="f-feemode" onchange="applyBatchFeeAmount()">
           <option value="onetime" ${(s.fee_mode||'onetime')==='onetime'?'selected':''}>One-time</option>
           <option value="monthly" ${s.fee_mode==='monthly'?'selected':''}>Monthly</option>
         </select></label>
@@ -1346,7 +1356,7 @@ function profileModalHTML(s, payments, leaveHistory){
       ${payments && payments.length ? `<table class="table"><tbody>${payments.map(p=>`<tr><td>${fmtTime(p.created_at)}</td><td>${fmtMoney(p.amount)}</td><td class="muted">${esc(p.payment_method||'cash')}${p.payment_method==='online'&&p.bank_name?' · '+esc(p.bank_name):''}${p.payment_method==='online'&&p.transaction_uid?' · '+esc(p.transaction_uid):''}</td><td class="muted">${esc(p.recorded_by_name||'')}</td><td class="muted">${esc(p.note||'')}</td>${isAdmin?`<td class="row-actions"><button class="icon-btn" onclick="openEditPaymentModal('${escAttr(p.id)}','profile')">Edit</button><button class="icon-btn icon-danger" onclick="archivePaymentAction('${escAttr(p.id)}','profile')">Bin</button></td>`:''}</tr>`).join('')}</tbody></table>` : '<p class="muted">No payments recorded yet.</p>'}
 
       <div class="profile-section-title">Leave history (${leavesTaken} completed)</div>
-      ${leaveHistory && leaveHistory.length ? `<table class="table"><tbody>${leaveHistory.map(l=>`<tr><td data-label="Status"><span class="badge badge-${leaveBadgeClass(l.status)}">${esc(l.status)}</span></td><td data-label="Token" class="mono muted">${esc(l.token||'—')}</td><td data-label="Reason" class="muted">${esc(l.reason||'')}</td><td data-label="Out / In" class="muted">${leaveTimesHTML(l)}</td></tr>`).join('')}</tbody></table>` : '<p class="muted">No leave records.</p>'}
+      ${leaveHistory && leaveHistory.length ? `<table class="table"><tbody>${leaveHistory.map(l=>`<tr><td data-label="Status"><span class="badge badge-${leaveBadgeClass(l.status)}">${esc(l.status)}</span></td><td data-label="Token" class="mono muted">${esc(l.token||'—')}</td><td data-label="Reason" class="muted">${esc(l.reason||'')}</td><td data-label="Granted by" class="muted">${esc(l.granted_by_name||'')}</td><td data-label="Out / In" class="muted">${leaveTimesHTML(l)}</td></tr>`).join('')}</tbody></table>` : '<p class="muted">No leave records.</p>'}
 
       ${isAdmin ? `
       <div class="profile-section-title">Student QR</div>
@@ -1394,13 +1404,10 @@ function downloadQR(rollNo){
 }
 function idCardHTML(s){
   const safeRoll = safeId(s.roll_no);
-  const contacts = parseContacts(s.contacts);
-  const firstPhone = contacts.length? contacts[0].phone : '';
   return `<div class="id-card"><div class="id-card-head">Hostel Register · Student ID</div>
     <div class="id-card-body"><div id="printqr-${safeRoll}" class="id-qr"></div>
       <div class="id-info"><div class="id-name">${esc(s.name)}</div><div class="id-roll">${esc(s.roll_no)}</div>
-        <div class="id-meta">Room ${esc(s.room||'—')} · ${esc(s.course||'—')}</div>
-        <div class="id-meta">${esc(firstPhone)}</div></div></div></div>`;
+        <div class="id-meta">Room ${esc(s.room||'—')} · ${esc(s.course||'—')}</div></div></div></div>`;
 }
 function printIDCard(rollNo){
   const s = state.students.find(x=>x.roll_no.toLowerCase()===rollNo.toLowerCase());
@@ -1600,20 +1607,48 @@ async function submitGrantLeave(){
    the same day is rejected with a clear error (date-wise, in
    the student's local calendar day, not the server's).
    ============================================================ */
+function computeAttendanceGenderStats(markedList){
+  const activeStudents = state.students.filter(s=>!s.archived);
+  const outIds = new Set(state.leaves.filter(l=>l.status==='out').map(l=>l.student_id));
+  const markedByStudent = {}; markedList.forEach(a=>{ markedByStudent[a.student_id] = a; });
+  const s = { malePresent:0, femalePresent:0, maleInCampus:0, femaleInCampus:0, maleOut:0, femaleOut:0, maleAbsent:0, femaleAbsent:0, absentList:[] };
+  activeStudents.forEach(st=>{
+    const g = st.gender;
+    const isOut = outIds.has(st.id);
+    const isMarked = !!markedByStudent[st.id];
+    if (g==='male' || g==='female'){
+      if (isMarked){ if (g==='male') s.malePresent++; else s.femalePresent++; }
+      if (isOut){ if (g==='male') s.maleOut++; else s.femaleOut++; }
+      else {
+        if (g==='male') s.maleInCampus++; else s.femaleInCampus++;
+        if (!isMarked){ if (g==='male') s.maleAbsent++; else s.femaleAbsent++; }
+      }
+    }
+    if (!isOut && !isMarked) s.absentList.push(st);
+  });
+  return s;
+}
 function renderAttendanceTab(){
   const dateStr = state.attDate || localDateStr();
   const list = state._attendanceList || [];
   const totalActive = state.students.filter(s=>!s.archived).length;
   const isToday = dateStr === localDateStr();
+  const gs = computeAttendanceGenderStats(list);
   return `
-  <div class="scan-panel ${state.scanning?'':'scan-idle'}" style="margin-bottom:26px;">
+  <div class="scan-panel ${state.scanning?'':'scan-idle'}" style="margin-bottom:22px;">
     ${state.scanning ? `
-      <div class="scan-frame"><div id="qr-reader"></div><div class="frame-corners"></div></div>
+      <div class="scan-frame">
+        <div id="qr-reader"></div><div class="frame-corners"></div>
+        ${state.attFeedback ? `<div class="scan-feedback ${state.attFeedback.type==='success'?'scan-feedback-ok':'scan-feedback-err'}">
+          <div class="scan-feedback-icon">${state.attFeedback.type==='success'?'✓':'✕'}</div>
+          <div class="scan-feedback-text">${esc(state.attFeedback.text)}</div>
+        </div>` : ''}
+      </div>
       <p class="muted">Keep scanning — each new student is marked instantly. Tap Stop when done.</p>
       <button class="btn btn-ghost" onclick="cancelScan()">Stop scanning</button>${renderManualEntry()}
     ` : `
       <div class="scan-hero"><div class="scan-hero-icon">📋</div><h2>Take attendance</h2>
-      <p class="muted">Scan each student's ID to mark them present for today. Scanning the same student again today shows an error instead of a duplicate.</p>
+      <p class="muted">Scan each student's ID to mark them present for today. Out-of-campus or already-marked students show a clear error instead.</p>
       <button class="btn btn-primary btn-lg" onclick="startScan()">Start camera scan</button></div>${renderManualEntry()}
     `}
   </div>
@@ -1621,6 +1656,26 @@ function renderAttendanceTab(){
     <div class="manual-row"><label class="muted" style="align-self:center;">Viewing:</label><input type="date" class="date-input" value="${dateStr}" onchange="setAttDate(this.value)" /> ${!isToday? `<button class="link-btn" onclick="setAttDate('${localDateStr()}')">Jump to today</button>` : ''}</div>
     <div class="toolbar-actions"><span class="muted">${list.length} of ${totalActive} active students marked present</span></div>
   </div>
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-num">${gs.malePresent}</div><div class="stat-label">♂ Male present</div></div>
+    <div class="stat-card"><div class="stat-num">${gs.femalePresent}</div><div class="stat-label">♀ Female present</div></div>
+    <div class="stat-card"><div class="stat-num">${gs.maleInCampus}</div><div class="stat-label">♂ Male in campus</div></div>
+    <div class="stat-card"><div class="stat-num">${gs.femaleInCampus}</div><div class="stat-label">♀ Female in campus</div></div>
+  </div>
+  <div class="stat-grid">
+    <div class="stat-card stat-out"><div class="stat-num">${gs.maleOut}</div><div class="stat-label">♂ Male on leave (out)</div></div>
+    <div class="stat-card stat-out"><div class="stat-num">${gs.femaleOut}</div><div class="stat-label">♀ Female on leave (out)</div></div>
+    <div class="stat-card stat-due"><div class="stat-num">${gs.maleAbsent}</div><div class="stat-label">♂ Male absent</div></div>
+    <div class="stat-card stat-due"><div class="stat-num">${gs.femaleAbsent}</div><div class="stat-label">♀ Female absent</div></div>
+  </div>
+  <p class="muted" style="margin:-6px 0 16px;">"In campus" / "on leave" reflect current status; "absent" means in campus but not yet marked present for this date.</p>
+  ${gs.absentList.length? `<div class="card" style="margin-bottom:18px;">
+    <h3>Absent (${gs.absentList.length})</h3>
+    <div class="student-grid">${gs.absentList.slice(0,30).map(s=>`<div class="student-card" style="cursor:pointer; padding:10px 14px;" onclick="openStudentProfile('${escAttr(s.roll_no)}')">
+      <div class="student-card-top">${studentInitialsAvatar(s,'sc-avatar')}<div><div class="sc-name">${esc(s.name)}</div><div class="sc-roll">${esc(s.roll_no)}</div></div></div>
+    </div>`).join('')}</div>
+    ${gs.absentList.length>30? `<p class="muted" style="margin-top:10px;">+ ${gs.absentList.length-30} more.</p>` : ''}
+  </div>` : ''}
   <div class="card no-pad"><table class="table"><thead><tr><th>Student</th><th>Marked by</th><th>Time</th></tr></thead>
     <tbody>${list.length? list.map(renderAttendanceRow).join('') : `<tr><td colspan="3" class="empty-hint">No attendance marked for this date yet.</td></tr>`}</tbody></table></div>`;
 }
@@ -1648,23 +1703,30 @@ function setAttDate(d){
   loadAttendanceForDate(state.attDate).then(list=>{ state._attendanceList=list; update(); });
   update();
 }
+function showAttFeedback(type, text){
+  state.attFeedback = { type, text, id: Date.now() };
+  update();
+  const myId = state.attFeedback.id;
+  setTimeout(()=>{ if (state.attFeedback && state.attFeedback.id===myId){ state.attFeedback=null; update(); } }, 900);
+}
 async function markAttendance(code){
   const normalized = String(code).trim();
   if (!normalized){ toast('Enter a roll number first.','error'); return; }
   try{
     let rows = state.students.filter(s=>s.roll_no.toLowerCase()===normalized.toLowerCase());
     if (!rows.length){ await loadStudents(); rows = state.students.filter(s=>s.roll_no.toLowerCase()===normalized.toLowerCase()); }
-    if (!rows.length){ buzz([30,30,30]); toast(`No student matches code "${normalized}".`,'error'); return; }
+    if (!rows.length){ buzz([30,30,30]); showAttFeedback('error', `No match: ${normalized}`); toast(`No student matches code "${normalized}".`,'error'); return; }
     const student = rows[0];
     const today = localDateStr();
     await sbRpc('mark_attendance', { p_roll_no: student.roll_no, p_date: today });
     buzz(60);
+    showAttFeedback('success', student.name);
     toast(`✓ ${student.name} marked present.`,'success');
     state.attDate = today;
     const list = await loadAttendanceForDate(today);
     state._attendanceList = list;
     update();
-  }catch(e){ buzz([30,30,30]); toast(e.message,'error'); }
+  }catch(e){ buzz([30,30,30]); showAttFeedback('error', e.message); toast(e.message,'error'); }
 }
 
 /* ============================================================
@@ -1875,12 +1937,14 @@ function renderAccountantShell(){
   return `<div class="acc-shell">${renderTopbar()}
     <div class="acc-tabs">
       <button class="tab-btn ${state.accTab==='scan'?'active':''}" onclick="setAccTab('scan')">Scan</button>
+      <button class="tab-btn ${state.accTab==='attendance'?'active':''}" onclick="setAccTab('attendance')">Attendance</button>
       <button class="tab-btn ${state.accTab==='students'?'active':''}" onclick="setAccTab('students')">Students</button>
       <button class="tab-btn ${state.accTab==='leaves'?'active':''}" onclick="setAccTab('leaves')">Leaves</button>
       <button class="tab-btn ${state.accTab==='myactivity'?'active':''}" onclick="setAccTab('myactivity')">My activity</button>
     </div>
     <main class="main acc-main">${
       state.accTab==='scan'?renderScanTab():
+      state.accTab==='attendance'?renderAttendanceTab():
       state.accTab==='students'?renderStudentsTab():
       state.accTab==='leaves'?renderLeavesTab():
       renderMyActivityTab()
@@ -1888,10 +1952,11 @@ function renderAccountantShell(){
   </div>${renderModal()}${renderToast()}${renderLightbox()}`;
 }
 function setAccTab(tab){
-  if (state.accTab==='scan' && state.scanning) stopCamera();
+  if ((state.accTab==='scan'||state.accTab==='attendance') && state.scanning) stopCamera();
   state.accTab=tab; state.scanning=false; state.scanResult=null; state.search='';
   update();
   if (tab==='leaves') loadLeaves().then(update);
+  if (tab==='attendance'){ if (!state.attDate) state.attDate = localDateStr(); loadAttendanceForDate(state.attDate).then(list=>{ state._attendanceList=list; update(); }); }
   if (tab==='myactivity') state._myPayments=null;
 }
 function renderManualEntry(){
