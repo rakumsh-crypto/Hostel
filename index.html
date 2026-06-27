@@ -327,7 +327,6 @@ a{color:var(--primary);}
 const HARDCODED_SUPABASE_URL = 'https://dthsknsixkyyrkvfvtzi.supabase.co';
 const HARDCODED_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0aHNrbnNpeGt5eXJrdmZ2dHppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNjUyMDcsImV4cCI6MjA5Nzg0MTIwN30.gPmmlpdlxVc-FI7FrcBmkEPCE-ASS6-2Y-9_Q3mPpYA';
 
-
 /* ============================================================
    STATE
    ============================================================ */
@@ -341,7 +340,7 @@ let state = {
   leaveDateFrom:null, leaveDateTo:null, txnDateFrom:null, txnDateTo:null,
   myTxnDateFrom:null, myTxnDateTo:null,
   loginRequests:[], myLoginRequestId:null,
-  attDate:null, attFeedback:null,
+  attDate:null,
   theme:'light'
 };
 let session = null;
@@ -1641,10 +1640,7 @@ function renderAttendanceTab(){
     ${state.scanning ? `
       <div class="scan-frame">
         <div id="qr-reader"></div><div class="frame-corners"></div>
-        ${state.attFeedback ? `<div class="scan-feedback ${state.attFeedback.type==='success'?'scan-feedback-ok':'scan-feedback-err'}">
-          <div class="scan-feedback-icon">${state.attFeedback.type==='success'?'✓':'✕'}</div>
-          <div class="scan-feedback-text">${esc(state.attFeedback.text)}</div>
-        </div>` : ''}
+        <div id="att-feedback-holder" class="scan-feedback" style="display:none;"></div>
       </div>
       <p class="muted">Keep scanning — each new student is marked instantly. Tap Stop when done.</p>
       <button class="btn btn-ghost" onclick="cancelScan()">Stop scanning</button>${renderManualEntry()}
@@ -1670,13 +1666,12 @@ function renderAttendanceTab(){
     <div class="stat-card stat-due"><div class="stat-num">${gs.maleAbsent}</div><div class="stat-label">♂ Male absent</div></div>
     <div class="stat-card stat-due"><div class="stat-num">${gs.femaleAbsent}</div><div class="stat-label">♀ Female absent</div></div>
   </div>
-  <p class="muted" style="margin:-6px 0 16px;">"In campus" / "on leave" reflect current status; "absent" means in campus but not yet marked present for this date.</p>
+  <p class="muted" style="margin:-6px 0 16px;">"In campus" / "on leave" reflect current status; "absent" means in campus but not yet marked present for this date. ${state.scanning?'Stats refresh when you stop scanning.':''}</p>
   ${gs.absentList.length? `<div class="card" style="margin-bottom:18px;">
     <h3>Absent (${gs.absentList.length})</h3>
-    <div class="student-grid">${gs.absentList.slice(0,30).map(s=>`<div class="student-card" style="cursor:pointer; padding:10px 14px;" onclick="openStudentProfile('${escAttr(s.roll_no)}')">
+    <div class="student-grid">${gs.absentList.map(s=>`<div class="student-card" style="cursor:pointer; padding:10px 14px;" onclick="openStudentProfile('${escAttr(s.roll_no)}')">
       <div class="student-card-top">${studentInitialsAvatar(s,'sc-avatar')}<div><div class="sc-name">${esc(s.name)}</div><div class="sc-roll">${esc(s.roll_no)}</div></div></div>
     </div>`).join('')}</div>
-    ${gs.absentList.length>30? `<p class="muted" style="margin-top:10px;">+ ${gs.absentList.length-30} more.</p>` : ''}
   </div>` : ''}
   <div class="card no-pad"><table class="table"><thead><tr><th>Student</th><th>Marked by</th><th>Time</th></tr></thead>
     <tbody>${list.length? list.map(renderAttendanceRow).join('') : `<tr><td colspan="3" class="empty-hint">No attendance marked for this date yet.</td></tr>`}</tbody></table></div>`;
@@ -1705,23 +1700,28 @@ function setAttDate(d){
   loadAttendanceForDate(state.attDate).then(list=>{ state._attendanceList=list; update(); });
   update();
 }
+let attFeedbackTimer = null;
 function showAttFeedback(type, text){
-  state.attFeedback = { type, text, id: Date.now() };
-  update();
-  const myId = state.attFeedback.id;
-  setTimeout(()=>{ if (state.attFeedback && state.attFeedback.id===myId){ state.attFeedback=null; update(); } }, 650);
+  const holder = document.getElementById('att-feedback-holder');
+  if (!holder) return; // camera not on screen right now — nothing to show this on
+  holder.className = 'scan-feedback ' + (type==='success' ? 'scan-feedback-ok' : 'scan-feedback-err');
+  holder.innerHTML = `<div class="scan-feedback-icon">${type==='success'?'✓':'✕'}</div><div class="scan-feedback-text">${esc(text)}</div>`;
+  holder.style.display = 'flex';
+  if (attFeedbackTimer) clearTimeout(attFeedbackTimer);
+  attFeedbackTimer = setTimeout(()=>{ holder.style.display='none'; holder.innerHTML=''; }, 650);
 }
 async function markAttendance(code, sessionKey){
   const normalized = String(code).trim();
   const key = sessionKey || normalized.toLowerCase();
   if (!normalized){ toast('Enter a roll number first.','error'); return; }
+  const viaCamera = state.scanning;
   try{
     let rows = state.students.filter(s=>s.roll_no.toLowerCase()===normalized.toLowerCase());
     if (!rows.length){ await loadStudents(); rows = state.students.filter(s=>s.roll_no.toLowerCase()===normalized.toLowerCase()); }
     if (!rows.length){
       buzz([30,30,30]);
       attendanceErrorCooldown[key] = Date.now();
-      if (state.scanning) showAttFeedback('error', `No match: ${normalized}`); else toast(`No student matches code "${normalized}".`,'error');
+      if (viaCamera) showAttFeedback('error', `No match: ${normalized}`); else toast(`No student matches code "${normalized}".`,'error');
       return;
     }
     const student = rows[0];
@@ -1729,16 +1729,25 @@ async function markAttendance(code, sessionKey){
     await sbRpc('mark_attendance', { p_roll_no: student.roll_no, p_date: today });
     buzz(60);
     attendanceSessionResolved.add(key);
-    if (state.scanning) showAttFeedback('success', student.name); else toast(`✓ ${student.name} marked present.`,'success');
     state.attDate = today;
-    const list = await loadAttendanceForDate(today);
-    state._attendanceList = list;
-    update();
+    if (viaCamera){
+      // Record locally WITHOUT a full re-render — re-rendering while the
+      // camera is live would tear down and recreate its video element,
+      // leaving the feed dark until the camera is restarted.
+      if (!state._attendanceList) state._attendanceList = [];
+      state._attendanceList.push({ id:'local-'+Date.now()+'-'+key, student_id: student.id, att_date: today, marked_by_name: state.user.name, created_at: new Date().toISOString(), students:{ roll_no: student.roll_no, name: student.name } });
+      showAttFeedback('success', student.name);
+    } else {
+      toast(`✓ ${student.name} marked present.`,'success');
+      const list = await loadAttendanceForDate(today);
+      state._attendanceList = list;
+      update();
+    }
   }catch(e){
     buzz([30,30,30]);
     if (/already marked/i.test(e.message||'')) attendanceSessionResolved.add(key); // known resolved state — no point retrying
     else attendanceErrorCooldown[key] = Date.now(); // e.g. out of campus — allow a retry later, just not every frame
-    if (state.scanning) showAttFeedback('error', e.message); else toast(e.message,'error');
+    if (viaCamera) showAttFeedback('error', e.message); else toast(e.message,'error');
   }
 }
 
@@ -1997,7 +2006,11 @@ function initCamera(){
   }catch(err){ toast('Could not start the camera.','error'); state.scanning=false; update(); }
 }
 function stopCamera(){ if (html5QrCode){ try{ html5QrCode.stop().then(()=>{ try{ html5QrCode.clear(); }catch(e){} }).catch(()=>{}); }catch(e){} } }
-function cancelScan(){ stopCamera(); state.scanning=false; update(); }
+function cancelScan(){
+  const wasAttendance = currentScanMode()==='attendance';
+  stopCamera(); state.scanning=false; update();
+  if (wasAttendance){ loadAttendanceForDate(state.attDate||localDateStr()).then(list=>{ state._attendanceList=list; update(); }); }
+}
 function handleScanSuccess(decodedText){
   const mode = currentScanMode();
   if (mode==='attendance'){
