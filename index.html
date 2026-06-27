@@ -555,8 +555,8 @@ function localDateStr(d){
 }
 function currentScanMode(){
   if (state.user.role==='gatekeeper') return 'gate';
-  if (state.accTab==='attendance') return 'attendance';
-  return 'fee';
+  if (state.user.role==='admin') return state.adminTab==='attendance' ? 'attendance' : 'fee';
+  return state.accTab==='attendance' ? 'attendance' : 'fee';
 }
 
 /* ============================================================
@@ -1707,7 +1707,7 @@ function showAttFeedback(type, text){
   state.attFeedback = { type, text, id: Date.now() };
   update();
   const myId = state.attFeedback.id;
-  setTimeout(()=>{ if (state.attFeedback && state.attFeedback.id===myId){ state.attFeedback=null; update(); } }, 900);
+  setTimeout(()=>{ if (state.attFeedback && state.attFeedback.id===myId){ state.attFeedback=null; update(); } }, 650);
 }
 async function markAttendance(code){
   const normalized = String(code).trim();
@@ -1715,18 +1715,24 @@ async function markAttendance(code){
   try{
     let rows = state.students.filter(s=>s.roll_no.toLowerCase()===normalized.toLowerCase());
     if (!rows.length){ await loadStudents(); rows = state.students.filter(s=>s.roll_no.toLowerCase()===normalized.toLowerCase()); }
-    if (!rows.length){ buzz([30,30,30]); showAttFeedback('error', `No match: ${normalized}`); toast(`No student matches code "${normalized}".`,'error'); return; }
+    if (!rows.length){
+      buzz([30,30,30]);
+      if (state.scanning) showAttFeedback('error', `No match: ${normalized}`); else toast(`No student matches code "${normalized}".`,'error');
+      return;
+    }
     const student = rows[0];
     const today = localDateStr();
     await sbRpc('mark_attendance', { p_roll_no: student.roll_no, p_date: today });
     buzz(60);
-    showAttFeedback('success', student.name);
-    toast(`✓ ${student.name} marked present.`,'success');
+    if (state.scanning) showAttFeedback('success', student.name); else toast(`✓ ${student.name} marked present.`,'success');
     state.attDate = today;
     const list = await loadAttendanceForDate(today);
     state._attendanceList = list;
     update();
-  }catch(e){ buzz([30,30,30]); showAttFeedback('error', e.message); toast(e.message,'error'); }
+  }catch(e){
+    buzz([30,30,30]);
+    if (state.scanning) showAttFeedback('error', e.message); else toast(e.message,'error');
+  }
 }
 
 /* ============================================================
