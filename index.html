@@ -327,6 +327,7 @@ a{color:var(--primary);}
 const HARDCODED_SUPABASE_URL = 'https://dthsknsixkyyrkvfvtzi.supabase.co';
 const HARDCODED_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0aHNrbnNpeGt5eXJrdmZ2dHppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNjUyMDcsImV4cCI6MjA5Nzg0MTIwN30.gPmmlpdlxVc-FI7FrcBmkEPCE-ASS6-2Y-9_Q3mPpYA';
 
+
 /* ============================================================
    STATE
    ============================================================ */
@@ -347,8 +348,9 @@ let session = null;
 let html5QrCode = null;
 let pendingConfirmCallback = null;
 let approvalPollInterval = null;
-let lastAttendanceScanCode = null;
-let lastAttendanceScanTime = 0;
+let attendanceSessionResolved = new Set(); // codes already successfully marked OR known-already-marked — never bother the operator again this session
+let attendancePending = new Set(); // codes currently mid-request, to avoid duplicate concurrent calls
+let attendanceErrorCooldown = {}; // code -> timestamp, for retryable errors (not found, out of campus) so they don't spam every decode frame
 
 /* ============================================================
    STORAGE LAYER (Claude artifact storage when previewing inside
@@ -1709,14 +1711,16 @@ function showAttFeedback(type, text){
   const myId = state.attFeedback.id;
   setTimeout(()=>{ if (state.attFeedback && state.attFeedback.id===myId){ state.attFeedback=null; update(); } }, 650);
 }
-async function markAttendance(code){
+async function markAttendance(code, sessionKey){
   const normalized = String(code).trim();
+  const key = sessionKey || normalized.toLowerCase();
   if (!normalized){ toast('Enter a roll number first.','error'); return; }
   try{
     let rows = state.students.filter(s=>s.roll_no.toLowerCase()===normalized.toLowerCase());
     if (!rows.length){ await loadStudents(); rows = state.students.filter(s=>s.roll_no.toLowerCase()===normalized.toLowerCase()); }
     if (!rows.length){
       buzz([30,30,30]);
+      attendanceErrorCooldown[key] = Date.now();
       if (state.scanning) showAttFeedback('error', `No match: ${normalized}`); else toast(`No student matches code "${normalized}".`,'error');
       return;
     }
@@ -1724,6 +1728,7 @@ async function markAttendance(code){
     const today = localDateStr();
     await sbRpc('mark_attendance', { p_roll_no: student.roll_no, p_date: today });
     buzz(60);
+    attendanceSessionResolved.add(key);
     if (state.scanning) showAttFeedback('success', student.name); else toast(`✓ ${student.name} marked present.`,'success');
     state.attDate = today;
     const list = await loadAttendanceForDate(today);
@@ -1731,6 +1736,8 @@ async function markAttendance(code){
     update();
   }catch(e){
     buzz([30,30,30]);
+    if (/already marked/i.test(e.message||'')) attendanceSessionResolved.add(key); // known resolved state — no point retrying
+    else attendanceErrorCooldown[key] = Date.now(); // e.g. out of campus — allow a retry later, just not every frame
     if (state.scanning) showAttFeedback('error', e.message); else toast(e.message,'error');
   }
 }
@@ -1994,10 +2001,13 @@ function cancelScan(){ stopCamera(); state.scanning=false; update(); }
 function handleScanSuccess(decodedText){
   const mode = currentScanMode();
   if (mode==='attendance'){
-    const now = Date.now();
-    if (decodedText===lastAttendanceScanCode && (now-lastAttendanceScanTime) < 3000) return;
-    lastAttendanceScanCode = decodedText; lastAttendanceScanTime = now;
-    markAttendance(decodedText);
+    const key = decodedText.trim().toLowerCase();
+    if (attendanceSessionResolved.has(key)) return; // already handled this session — stay completely silent
+    if (attendancePending.has(key)) return; // a request for this code is already in flight
+    const lastErr = attendanceErrorCooldown[key];
+    if (lastErr && (Date.now()-lastErr) < 15000) return; // recently showed a retryable error for this code — wait before trying again
+    attendancePending.add(key);
+    markAttendance(decodedText, key).finally(()=>{ attendancePending.delete(key); });
     return; // keep the camera running for the next student
   }
   stopCamera(); state.scanning=false;
