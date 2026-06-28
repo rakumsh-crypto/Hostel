@@ -44,6 +44,8 @@
   background:var(--input-bg); color:var(--ink); border-color:var(--border);
 }
 [data-theme="dark"] .id-card{ color:#1E2230; } /* printed ID cards stay light/printable regardless of theme */
+[data-theme="dark"] .table th, [data-theme="dark"] .att-split-head{ background:var(--surface); }
+[data-theme="dark"] .att-list-row:hover{ background:var(--bg); }
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;}
 body{font-family:var(--font-body); color:var(--ink); background:var(--bg); min-height:100vh;}
@@ -200,6 +202,10 @@ a{color:var(--primary);}
 .perm-checks label{display:flex; align-items:center; gap:4px; text-transform:none; font-weight:500;}
 
 .student-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:14px;}
+.gender-section{margin-bottom:28px;}
+.gender-section-title{font-size:17px; margin-bottom:14px; padding-bottom:8px; border-bottom:2px solid var(--primary);}
+.room-group{margin-bottom:18px;}
+.room-group-title{font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); margin-bottom:8px; padding-left:2px;}
 .student-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow); cursor:pointer; transition:transform .12s ease, box-shadow .12s ease; display:flex; flex-direction:column; gap:10px;}
 .student-card:hover{transform:translateY(-2px); box-shadow:0 4px 18px rgba(16,24,40,.12);}
 .student-card-top{display:flex; align-items:center; gap:12px;}
@@ -259,6 +265,14 @@ a{color:var(--primary);}
 .scan-feedback-err{background:rgba(224,72,61,.92);}
 .scan-feedback-icon{font-size:64px; font-weight:800; color:#fff; line-height:1;}
 .scan-feedback-text{font-size:14px; font-weight:600; color:#fff; padding:0 16px; text-align:center;}
+.att-split{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+@media (max-width:760px){ .att-split{grid-template-columns:1fr;} }
+.att-split-col{display:flex; flex-direction:column;}
+.att-split-head{padding:13px 16px; border-bottom:1px solid var(--border); background:#FAFAFD; font-weight:700; font-size:14px;}
+.att-split-body{max-height:55vh; overflow-y:auto;}
+.att-list-row{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:9px 16px; border-bottom:1px solid var(--border); cursor:pointer; font-size:13.5px;}
+.att-list-row:hover{background:#FAFAFD;}
+.att-list-row:last-child{border-bottom:none;}
 #qr-reader{width:100%; height:100%;}
 .frame-corners{position:absolute; inset:14px; border:2px solid rgba(255,255,255,.65); border-radius:12px; pointer-events:none;}
 .manual-entry{margin-top:24px; text-align:left;}
@@ -333,14 +347,14 @@ const HARDCODED_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3
 let state = {
   view:'loading', sbUrl:null, sbAnonKey:null, user:null,
   students:[], accounts:[], activity:[], leaves:[], batches:[],
-  studentsView:'active', sortBy:'name', duesFilter:'all',
+  studentsView:'active', sortBy:'name', duesFilter:'all', studentGroupView:false,
   adminTab:'dashboard', accTab:'scan', gateTab:'gate',
   search:'', modal:null, scanResult:null, gateResult:null, scanning:false,
   toast:null, loginError:null, setupError:null,
   leaveDateFrom:null, leaveDateTo:null, txnDateFrom:null, txnDateTo:null,
   myTxnDateFrom:null, myTxnDateTo:null,
   loginRequests:[], myLoginRequestId:null,
-  attDate:null,
+  attDate:null, attListView:false, attListSearch:'',
   theme:'light'
 };
 let session = null;
@@ -350,6 +364,7 @@ let approvalPollInterval = null;
 let attendanceSessionResolved = new Set(); // codes already successfully marked OR known-already-marked — never bother the operator again this session
 let attendancePending = new Set(); // codes currently mid-request, to avoid duplicate concurrent calls
 let attendanceErrorCooldown = {}; // code -> timestamp, for retryable errors (not found, out of campus) so they don't spam every decode frame
+let attendanceSessionCount = 0; // live tally for this scanning burst, shown without a full re-render
 
 /* ============================================================
    STORAGE LAYER (Claude artifact storage when previewing inside
@@ -523,7 +538,7 @@ function sortStudentsList(list){
 function filteredStudents(){
   const q = (state.search||'').trim().toLowerCase();
   let list = state.students;
-  if (q) list = list.filter(s => (s.roll_no||'').toLowerCase().includes(q) || (s.name||'').toLowerCase().includes(q) || (s.room||'').toLowerCase().includes(q) || (s.course||'').toLowerCase().includes(q));
+  if (q) list = list.filter(s => (s.roll_no||'').toLowerCase().includes(q) || (s.name||'').toLowerCase().includes(q) || (s.room||'').toLowerCase().includes(q));
   if (state.duesFilter==='due') list = list.filter(s=>(s.fee_total||0)>(s.fee_paid||0));
   else if (state.duesFilter==='paid') list = list.filter(s=>(s.fee_total||0)<=(s.fee_paid||0));
   return sortStudentsList(list);
@@ -934,7 +949,7 @@ function renderStudentCard(s){
       ${due>0? `<span class="pay-pill" title="Dues pending">₹</span>` : `<span class="paid-tick" title="Fully paid">✓</span>`}
     </div>
     ${leave && leave.status==='out' ? `<span class="out-pill">● Out since ${fmtTime(leave.out_at)}</span>` : leave? `<span class="out-pill" style="background:var(--amber-soft);color:var(--amber);">● Permitted · token ${esc(leave.token||'')}</span>` : ''}
-    <div class="sc-meta"><span>${esc(s.room||'—')} · ${esc(s.course||'—')}${batch?` · <span class="mono">${esc(batch.short_code||batch.name)}</span>`:''}</span><span class="${due>0?'text-due':'text-paid'}">${due>0?fmtMoney(due):'Paid'}</span></div>
+    <div class="sc-meta"><span>${esc(s.room||'—')}${batch?` · <span class="mono">${esc(batch.short_code||batch.name)}</span>`:''}</span><span class="${due>0?'text-due':'text-paid'}">${due>0?fmtMoney(due):'Paid'}</span></div>
     ${state.studentsView==='active' ? `
     <div class="sc-actions" onclick="event.stopPropagation()">
       ${isAdmin? `<button class="icon-btn" onclick="openStudentForm('${escAttr(s.roll_no)}')">Edit</button>` : ''}
@@ -966,6 +981,10 @@ function renderStudentsTab(){
         <option value="due" ${state.duesFilter==='due'?'selected':''}>Show: With dues</option>
         <option value="paid" ${state.duesFilter==='paid'?'selected':''}>Show: Fully paid</option>
       </select>
+      <div class="segmented">
+        <button class="${!state.studentGroupView?'active':''}" onclick="setStudentGroupView(false)">Flat list</button>
+        <button class="${state.studentGroupView?'active':''}" onclick="setStudentGroupView(true)">By gender &amp; room</button>
+      </div>
       ${isAdmin? `<div class="segmented">
         <button class="${state.studentsView==='active'?'active':''}" onclick="setStudentsView('active')">Active</button>
         <button class="${state.studentsView==='recycle'?'active':''}" onclick="setStudentsView('recycle')">Recycle bin</button>
@@ -975,11 +994,43 @@ function renderStudentsTab(){
       ${state.studentsView==='active' && canAdd? `<button class="btn btn-primary" onclick="openStudentForm(null)">Add student</button>` : ''}
     </div>
   </div>
-  ${list.length? `<div class="student-grid">${list.map(renderStudentCard).join('')}</div>` : `<div class="card"><p class="empty-hint">${state.studentsView==='recycle'?'Recycle bin is empty.':'No students match. Try a different search, or add your first student.'}</p></div>`}
+  ${!list.length ? `<div class="card"><p class="empty-hint">${state.studentsView==='recycle'?'Recycle bin is empty.':'No students match. Try a different search, or add your first student.'}</p></div>` :
+    state.studentGroupView ? renderStudentsGroupedByGenderRoom(list) : `<div class="student-grid">${list.map(renderStudentCard).join('')}</div>`}
   `;
 }
 function onSearchInput(val){ state.search=val; update(); }
 function setStudentsView(v){ state.studentsView=v; state.search=''; loadStudents().then(update); }
+function setStudentGroupView(v){ state.studentGroupView=v; update(); }
+function groupStudentsByRoom(arr){
+  const withRoom = {}; const withoutRoom = [];
+  arr.forEach(s=>{
+    const r = (s.room||'').trim();
+    if (!r){ withoutRoom.push(s); return; }
+    if (!withRoom[r]) withRoom[r] = [];
+    withRoom[r].push(s);
+  });
+  const roomKeys = Object.keys(withRoom).sort((a,b)=>a.localeCompare(b, undefined, {numeric:true, sensitivity:'base'}));
+  return { roomKeys, withRoom, withoutRoom };
+}
+function renderGenderSection(title, arr){
+  if (!arr.length) return '';
+  const { roomKeys, withRoom, withoutRoom } = groupStudentsByRoom(arr);
+  return `<div class="gender-section">
+    <h3 class="gender-section-title">${esc(title)} (${arr.length})</h3>
+    ${roomKeys.map(r=>`<div class="room-group">
+      <div class="room-group-title">Room ${esc(r)}</div>
+      <div class="student-grid">${withRoom[r].map(renderStudentCard).join('')}</div>
+    </div>`).join('')}
+    ${withoutRoom.length? `<div class="student-grid">${withoutRoom.map(renderStudentCard).join('')}</div>` : ''}
+  </div>`;
+}
+function renderStudentsGroupedByGenderRoom(list){
+  const male = list.filter(s=>s.gender==='male');
+  const female = list.filter(s=>s.gender==='female');
+  const other = list.filter(s=>s.gender!=='male' && s.gender!=='female');
+  const html = renderGenderSection('Male', male) + renderGenderSection('Female', female) + renderGenderSection('Not specified', other);
+  return html || `<div class="card"><p class="empty-hint">No students match.</p></div>`;
+}
 function setSortBy(v){ state.sortBy=v; update(); }
 function setDuesFilter(v){ state.duesFilter=v; update(); }
 function loadPhotosForVisibleCards(){
@@ -1137,7 +1188,6 @@ function studentFormModalHTML(existing, contacts){
         <label>Roll number<input id="f-rollno" value="${esc(s.roll_no||'')}" ${existing?'readonly':''} /></label>
         <label>Full name<input id="f-name" value="${esc(s.name||'')}" /></label>
         <label>Room no.<input id="f-room" value="${esc(s.room||'')}" /></label>
-        <label>Course<input id="f-course" value="${esc(s.course||'')}" /></label>
         <label>Gender<select id="f-gender">
           <option value="" ${!s.gender?'selected':''}>— Not specified —</option>
           <option value="male" ${s.gender==='male'?'selected':''}>Male</option>
@@ -1195,7 +1245,6 @@ async function submitStudentForm(){
   const rollNo = document.getElementById('f-rollno').value.trim();
   const name = document.getElementById('f-name').value.trim();
   const room = document.getElementById('f-room').value.trim();
-  const course = document.getElementById('f-course').value.trim();
   const gender = document.getElementById('f-gender').value || null;
   const batchId = document.getElementById('f-batch').value || null;
   const father = document.getElementById('f-father').value.trim();
@@ -1208,7 +1257,7 @@ async function submitStudentForm(){
   if (!rollNo || !name){ toast('Roll number and name are required.','error'); return; }
   const btn = document.getElementById('student-save-btn'); if (btn){ btn.disabled=true; btn.textContent='Saving…'; }
   try{
-    const payload = { name, room, course, gender, batch_id:batchId, father_name:father, mother_name:mother, address, contacts, fee_mode:feeMode, fee_total:feeTotal };
+    const payload = { name, room, gender, batch_id:batchId, father_name:father, mother_name:mother, address, contacts, fee_mode:feeMode, fee_total:feeTotal };
     if (!originalRollNo){
       payload.fee_paid = 0;
       const inserted = await sbInsert('students', Object.assign({ roll_no: rollNo }, payload));
@@ -1310,12 +1359,13 @@ function purgeStudent(rollNo){
 function openStudentProfile(rollNo){
   const s = state.students.find(x=>x.roll_no.toLowerCase()===rollNo.toLowerCase());
   if (!s){ toast('Student not found.','error'); return; }
-  state.modal = { type:'profile', student:s, payments:[], leaveHistory:[] };
+  state.modal = { type:'profile', student:s, payments:[], leaveHistory:[], attendanceHistory:[] };
   update();
   loadPaymentsFor(s.id).then(payments=>{ if (state.modal && state.modal.type==='profile' && state.modal.student.id===s.id){ state.modal.payments=payments; update(); } });
   loadLeavesFor(s.id).then(lv=>{ if (state.modal && state.modal.type==='profile' && state.modal.student.id===s.id){ state.modal.leaveHistory=lv; update(); } });
+  loadAttendanceFor(s.id).then(att=>{ if (state.modal && state.modal.type==='profile' && state.modal.student.id===s.id){ state.modal.attendanceHistory=att; update(); } });
 }
-function profileModalHTML(s, payments, leaveHistory){
+function profileModalHTML(s, payments, leaveHistory, attendanceHistory){
   const due = Math.max(0,(s.fee_total||0)-(s.fee_paid||0));
   const contacts = parseContacts(s.contacts);
   const currentLeave = leaveForStudent(s.id);
@@ -1336,7 +1386,6 @@ function profileModalHTML(s, payments, leaveHistory){
       </div>
       <div class="profile-grid">
         <div><span class="muted">Room</span><div>${esc(s.room||'—')}</div></div>
-        <div><span class="muted">Course</span><div>${esc(s.course||'—')}</div></div>
         <div><span class="muted">Gender</span><div>${s.gender?esc(s.gender):'—'}</div></div>
         <div><span class="muted">Batch</span><div>${batch?esc(batch.name):'—'}</div></div>
         <div><span class="muted">Father's name</span><div>${esc(s.father_name||'—')}</div></div>
@@ -1358,6 +1407,9 @@ function profileModalHTML(s, payments, leaveHistory){
 
       <div class="profile-section-title">Leave history (${leavesTaken} completed)</div>
       ${leaveHistory && leaveHistory.length ? `<table class="table"><tbody>${leaveHistory.map(l=>`<tr><td data-label="Status"><span class="badge badge-${leaveBadgeClass(l.status)}">${esc(l.status)}</span></td><td data-label="Token" class="mono muted">${esc(l.token||'—')}</td><td data-label="Reason" class="muted">${esc(l.reason||'')}</td><td data-label="Granted by" class="muted">${esc(l.granted_by_name||'')}</td><td data-label="Out / In" class="muted">${leaveTimesHTML(l)}</td></tr>`).join('')}</tbody></table>` : '<p class="muted">No leave records.</p>'}
+
+      <div class="profile-section-title">Attendance${(attendanceHistory&&attendanceHistory.some(a=>a.att_date===localDateStr()))? ' · <span class="text-paid">Marked present today</span>' : ' · <span class="text-due">Not marked today</span>'}</div>
+      ${attendanceHistory && attendanceHistory.length ? `<table class="table"><tbody>${attendanceHistory.map(a=>`<tr><td data-label="Date" class="mono">${esc(a.att_date)}</td><td data-label="Marked by" class="muted">${esc(a.marked_by_name||'')}</td><td data-label="Time" class="muted">${fmtTime(a.created_at)}</td></tr>`).join('')}</tbody></table>` : '<p class="muted">No attendance recorded yet.</p>'}
 
       ${isAdmin ? `
       <div class="profile-section-title">Student QR</div>
@@ -1408,7 +1460,7 @@ function idCardHTML(s){
   return `<div class="id-card"><div class="id-card-head">Hostel Register · Student ID</div>
     <div class="id-card-body"><div id="printqr-${safeRoll}" class="id-qr"></div>
       <div class="id-info"><div class="id-name">${esc(s.name)}</div><div class="id-roll">${esc(s.roll_no)}</div>
-        <div class="id-meta">Room ${esc(s.room||'—')} · ${esc(s.course||'—')}</div></div></div></div>`;
+        <div class="id-meta">Room ${esc(s.room||'—')}</div></div></div></div>`;
 }
 function printIDCard(rollNo){
   const s = state.students.find(x=>x.roll_no.toLowerCase()===rollNo.toLowerCase());
@@ -1432,10 +1484,14 @@ function bulkImportModalHTML(){
   return `<div class="modal-overlay" onclick="if(event.target===this) closeModal()">
     <div class="modal modal-lg">
       <h3>Bulk import students</h3>
-      <p class="muted">One student per line, 13 columns: <span class="mono">RollNo,Name,Room,Course,Gender,Batch,FatherName,MotherName,Address,Contacts,FeeMode,FeeTotal,FeePaid</span></p>
+      <p class="muted">One student per line, 12 columns: <span class="mono">RollNo,Name,Room,Gender,Batch,FatherName,MotherName,Address,Contacts,FeeMode,FeeTotal,FeePaid</span></p>
       <p class="muted"><b>Gender</b>: male/female/other (or blank). <b>Batch</b>: the batch's short code or name (must already exist — create batches first). <b>Contacts</b>: <span class="mono">Label:Phone;Label:Phone</span>, e.g. <span class="mono">Student:9876543210;Father:9123456780</span>. <b>FeeMode</b>: monthly or onetime.</p>
+      <div class="form-grid" style="margin:14px 0;">
+        <label>Upload a .csv file<input type="file" id="csv-file-input" accept=".csv,text/csv" onchange="onCsvFileSelected(event)" /></label>
+      </div>
+      <p class="muted" style="margin:0 0 6px;">…or paste it directly:</p>
       <button class="link-btn" onclick="downloadCSVTemplate()">Download template</button>
-      <textarea id="csv-textarea" class="csv-textarea" rows="10" placeholder="BCA2024015,Aman Kumar,B-12,BCA,male,24I,Ram Kumar,Sita Devi,123 MG Road Patna,Student:9876543210;Father:9123456780,onetime,60000,30000"></textarea>
+      <textarea id="csv-textarea" class="csv-textarea" rows="10" placeholder="BCA2024015,Aman Kumar,B-12,male,24I,Ram Kumar,Sita Devi,123 MG Road Patna,Student:9876543210;Father:9123456780,onetime,60000,30000"></textarea>
       <p class="muted">Only photos can't be bulk-imported — add those individually via Edit afterward. Everything else is here so you shouldn't need to.</p>
       <div class="modal-actions">
         <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
@@ -1444,8 +1500,16 @@ function bulkImportModalHTML(){
     </div>
   </div>`;
 }
+function onCsvFileSelected(event){
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e)=>{ document.getElementById('csv-textarea').value = e.target.result; toast('CSV loaded — review below, then click Import.','success'); };
+  reader.onerror = ()=> toast('Could not read that file.','error');
+  reader.readAsText(file);
+}
 function downloadCSVTemplate(){
-  downloadTextFile('RollNo,Name,Room,Course,Gender,Batch,FatherName,MotherName,Address,Contacts,FeeMode,FeeTotal,FeePaid\nBCA2024015,Aman Kumar,B-12,BCA,male,24I,Ram Kumar,Sita Devi,123 MG Road Patna,Student:9876543210;Father:9123456780,onetime,60000,30000', 'student-import-template.csv', 'text/csv');
+  downloadTextFile('RollNo,Name,Room,Gender,Batch,FatherName,MotherName,Address,Contacts,FeeMode,FeeTotal,FeePaid\nBCA2024015,Aman Kumar,B-12,male,24I,Ram Kumar,Sita Devi,123 MG Road Patna,Student:9876543210;Father:9123456780,onetime,60000,30000', 'student-import-template.csv', 'text/csv');
 }
 function parseContactsField(raw){
   if (!raw) return [];
@@ -1472,13 +1536,13 @@ async function parseAndImportCSV(){
   lines.forEach((line,i)=>{
     if (i===0 && /roll/i.test(line) && /name/i.test(line)) return;
     const parts = line.split(',').map(p=>p.trim());
-    const [rollNo,name,room,course,gender,batchText,father,mother,address,contactsText,feeMode,feeTotal,feePaid] = parts;
+    const [rollNo,name,room,gender,batchText,father,mother,address,contactsText,feeMode,feeTotal,feePaid] = parts;
     if (!rollNo || !name || existingRolls.has(rollNo.toLowerCase())){ skipped++; return; }
     const batch = findBatchByCodeOrName(batchText);
     if (batchText && !batch) batchMisses++;
     const paidAmount = parseFloat(feePaid)||0;
     if (paidAmount>0) initialPayments.push({ rollNo, amount:paidAmount });
-    rowsToInsert.push({ roll_no:rollNo, name, room:room||'', course:course||'',
+    rowsToInsert.push({ roll_no:rollNo, name, room:room||'',
       gender: ['male','female','other'].includes((gender||'').toLowerCase()) ? gender.toLowerCase() : null,
       batch_id: batch?batch.id:null,
       father_name:father||'', mother_name:mother||'', address:address||'',
@@ -1505,11 +1569,11 @@ async function parseAndImportCSV(){
   update();
 }
 function exportCSV(){
-  const header = 'RollNo,Name,Room,Course,Gender,Batch,FatherName,MotherName,Address,Contacts,FeeMode,FeeTotal,FeePaid';
+  const header = 'RollNo,Name,Room,Gender,Batch,FatherName,MotherName,Address,Contacts,FeeMode,FeeTotal,FeePaid';
   const rows = state.students.map(s=>{
     const batch = state.batches.find(b=>b.id===s.batch_id);
     const contacts = parseContacts(s.contacts).map(c=>`${c.label}:${c.phone}`).join(';');
-    return [s.roll_no,s.name,s.room,s.course,s.gender||'',batch?(batch.short_code||batch.name):'',s.father_name,s.mother_name,s.address,contacts,s.fee_mode,s.fee_total,s.fee_paid].map(csvEscape).join(',');
+    return [s.roll_no,s.name,s.room,s.gender||'',batch?(batch.short_code||batch.name):'',s.father_name,s.mother_name,s.address,contacts,s.fee_mode,s.fee_total,s.fee_paid].map(csvEscape).join(',');
   });
   downloadTextFile([header,...rows].join('\n'), 'hostel-students-backup.csv', 'text/csv');
 }
@@ -1612,7 +1676,7 @@ function computeAttendanceGenderStats(markedList){
   const activeStudents = state.students.filter(s=>!s.archived);
   const outIds = new Set(state.leaves.filter(l=>l.status==='out').map(l=>l.student_id));
   const markedByStudent = {}; markedList.forEach(a=>{ markedByStudent[a.student_id] = a; });
-  const s = { malePresent:0, femalePresent:0, maleInCampus:0, femaleInCampus:0, maleOut:0, femaleOut:0, maleAbsent:0, femaleAbsent:0, absentList:[] };
+  const s = { malePresent:0, femalePresent:0, maleInCampus:0, femaleInCampus:0, maleOut:0, femaleOut:0, maleAbsent:0, femaleAbsent:0, absentList:[], presentList:[] };
   activeStudents.forEach(st=>{
     const g = st.gender;
     const isOut = outIds.has(st.id);
@@ -1625,7 +1689,8 @@ function computeAttendanceGenderStats(markedList){
         if (!isMarked){ if (g==='male') s.maleAbsent++; else s.femaleAbsent++; }
       }
     }
-    if (!isOut && !isMarked) s.absentList.push(st);
+    if (isMarked) s.presentList.push(st);
+    else if (!isOut) s.absentList.push(st);
   });
   return s;
 }
@@ -1642,6 +1707,7 @@ function renderAttendanceTab(){
         <div id="qr-reader"></div><div class="frame-corners"></div>
         <div id="att-feedback-holder" class="scan-feedback" style="display:none;"></div>
       </div>
+      <p class="muted">Marked so far this session: <b id="att-session-counter">${attendanceSessionCount}</b></p>
       <p class="muted">Keep scanning — each new student is marked instantly. Tap Stop when done.</p>
       <button class="btn btn-ghost" onclick="cancelScan()">Stop scanning</button>${renderManualEntry()}
     ` : `
@@ -1667,22 +1733,35 @@ function renderAttendanceTab(){
     <div class="stat-card stat-due"><div class="stat-num">${gs.femaleAbsent}</div><div class="stat-label">♀ Female absent</div></div>
   </div>
   <p class="muted" style="margin:-6px 0 16px;">"In campus" / "on leave" reflect current status; "absent" means in campus but not yet marked present for this date. ${state.scanning?'Stats refresh when you stop scanning.':''}</p>
-  ${gs.absentList.length? `<div class="card" style="margin-bottom:18px;">
-    <h3>Absent (${gs.absentList.length})</h3>
-    <div class="student-grid">${gs.absentList.map(s=>`<div class="student-card" style="cursor:pointer; padding:10px 14px;" onclick="openStudentProfile('${escAttr(s.roll_no)}')">
-      <div class="student-card-top">${studentInitialsAvatar(s,'sc-avatar')}<div><div class="sc-name">${esc(s.name)}</div><div class="sc-roll">${esc(s.roll_no)}</div></div></div>
-    </div>`).join('')}</div>
-  </div>` : ''}
-  <div class="card no-pad"><table class="table"><thead><tr><th>Student</th><th>Marked by</th><th>Time</th></tr></thead>
-    <tbody>${list.length? list.map(renderAttendanceRow).join('') : `<tr><td colspan="3" class="empty-hint">No attendance marked for this date yet.</td></tr>`}</tbody></table></div>`;
+  <div class="toolbar">
+    <div></div>
+    <div class="toolbar-actions"><button class="btn btn-secondary" onclick="toggleAttListView()">${state.attListView?'Hide':'View'} present &amp; absent lists</button></div>
+  </div>
+  ${state.attListView ? renderAttSplitView(list, gs) : ''}`;
 }
-function renderAttendanceRow(a){
-  const stu = a.students || {};
-  return `<tr style="cursor:pointer;" onclick="openAttendanceDetail('${escAttr(a.id)}')">
-    <td data-label="Student">${esc(stu.name||'')} <span class="mono muted">${esc(stu.roll_no||'')}</span></td>
-    <td data-label="Marked by" class="muted">${esc(a.marked_by_name||'')}</td>
-    <td data-label="Time" class="muted">${fmtTime(a.created_at)}</td>
-  </tr>`;
+function toggleAttListView(){ state.attListView = !state.attListView; update(); }
+function onAttListSearch(v){ state.attListSearch=v; update(); }
+function renderAttSplitView(list, gs){
+  const q = (state.attListSearch||'').trim().toLowerCase();
+  const matches = (name, roll) => !q || name.toLowerCase().includes(q) || roll.toLowerCase().includes(q);
+  const presentFiltered = list.filter(a => matches((a.students||{}).name||'', (a.students||{}).roll_no||''));
+  const absentFiltered = gs.absentList.filter(s => matches(s.name, s.roll_no));
+  return `
+  <input class="search-input" style="margin-bottom:14px;" placeholder="Search either list by name or roll no…" value="${esc(state.attListSearch||'')}" oninput="onAttListSearch(this.value)" />
+  <div class="att-split">
+    <div class="card no-pad att-split-col">
+      <div class="att-split-head">Present (${presentFiltered.length}${presentFiltered.length!==list.length?` of ${list.length}`:''})</div>
+      <div class="att-split-body">
+        ${presentFiltered.length? presentFiltered.map(a=>{ const stu=a.students||{}; return `<div class="att-list-row" onclick="openAttendanceDetail('${escAttr(a.id)}')"><span>${esc(stu.name||'')} <span class="mono muted">${esc(stu.roll_no||'')}</span></span><span class="muted">${fmtTime(a.created_at)}</span></div>`; }).join('') : `<p class="empty-hint">${q?'No matches.':'No one marked yet.'}</p>`}
+      </div>
+    </div>
+    <div class="card no-pad att-split-col">
+      <div class="att-split-head">Absent (${absentFiltered.length}${absentFiltered.length!==gs.absentList.length?` of ${gs.absentList.length}`:''})</div>
+      <div class="att-split-body">
+        ${absentFiltered.length? absentFiltered.map(s=>`<div class="att-list-row" onclick="openStudentProfile('${escAttr(s.roll_no)}')"><span>${esc(s.name)} <span class="mono muted">${esc(s.roll_no)}</span></span></div>`).join('') : `<p class="empty-hint">${q?'No matches.':'Nobody absent.'}</p>`}
+      </div>
+    </div>
+  </div>`;
 }
 function openAttendanceDetail(id){
   const a = (state._attendanceList||[]).find(x=>x.id===id);
@@ -1736,6 +1815,9 @@ async function markAttendance(code, sessionKey){
       // leaving the feed dark until the camera is restarted.
       if (!state._attendanceList) state._attendanceList = [];
       state._attendanceList.push({ id:'local-'+Date.now()+'-'+key, student_id: student.id, att_date: today, marked_by_name: state.user.name, created_at: new Date().toISOString(), students:{ roll_no: student.roll_no, name: student.name } });
+      attendanceSessionCount++;
+      const counterEl = document.getElementById('att-session-counter');
+      if (counterEl) counterEl.textContent = attendanceSessionCount;
       showAttFeedback('success', student.name);
     } else {
       toast(`✓ ${student.name} marked present.`,'success');
@@ -1996,7 +2078,7 @@ function renderScanTab(){
     <p class="muted">Scanning opens their full profile immediately.</p>
     <button class="btn btn-primary btn-lg" onclick="startScan()">Start camera scan</button></div>${renderManualEntry()}</div>`;
 }
-function startScan(){ state.scanning=true; update(); setTimeout(initCamera,60); }
+function startScan(){ attendanceSessionCount = 0; state.scanning=true; update(); setTimeout(initCamera,60); }
 function initCamera(){
   if (typeof Html5Qrcode==='undefined'){ toast('Camera library failed to load. Check your connection and reload.','error'); state.scanning=false; update(); return; }
   try{
@@ -2201,7 +2283,7 @@ function renderModal(){
   if (!state.modal) return '';
   switch(state.modal.type){
     case 'studentForm': return studentFormModalHTML(state.modal.existing, state.modal.contacts);
-    case 'profile': return profileModalHTML(state.modal.student, state.modal.payments, state.modal.leaveHistory);
+    case 'profile': return profileModalHTML(state.modal.student, state.modal.payments, state.modal.leaveHistory, state.modal.attendanceHistory);
     case 'archive': return archiveModalHTML(state.modal.rollNo);
     case 'bulkImport': return bulkImportModalHTML();
     case 'grantLeave': return grantLeaveModalHTML(state.modal.rollNo);
