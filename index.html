@@ -341,6 +341,7 @@ a{color:var(--primary);}
 const HARDCODED_SUPABASE_URL = 'https://dthsknsixkyyrkvfvtzi.supabase.co';
 const HARDCODED_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0aHNrbnNpeGt5eXJrdmZ2dHppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNjUyMDcsImV4cCI6MjA5Nzg0MTIwN30.gPmmlpdlxVc-FI7FrcBmkEPCE-ASS6-2Y-9_Q3mPpYA';
 
+
 /* ============================================================
    STATE
    ============================================================ */
@@ -1074,8 +1075,8 @@ function batchesModalHTML(){
 async function addBatch(){
   const name = document.getElementById('batch-name').value.trim();
   const shortCode = document.getElementById('batch-shortcode').value.trim();
-  const monthly = parseFloat(document.getElementById('batch-monthly').value)||0;
-  const onetime = parseFloat(document.getElementById('batch-onetime').value)||0;
+  const monthly = Math.max(0,parseFloat(document.getElementById('batch-monthly').value)||0);
+  const onetime = Math.max(0,parseFloat(document.getElementById('batch-onetime').value)||0);
   if (!name){ toast('Enter a batch name.','error'); return; }
   try{ await sbInsert('batches',{name, short_code:shortCode||null, monthly_fee_amount:monthly, onetime_fee_amount:onetime}); toast('Batch added.','success'); await loadBatches(); }
   catch(e){ toast(e.message,'error'); }
@@ -1251,24 +1252,51 @@ async function submitStudentForm(){
   const mother = document.getElementById('f-mother').value.trim();
   const address = document.getElementById('f-address').value.trim();
   const feeMode = document.getElementById('f-feemode').value;
-  const feeTotal = parseFloat(document.getElementById('f-feetotal').value) || 0;
-  const photoFile = document.getElementById('f-photo').files[0];
+  const feeTotal = Math.max(0, parseFloat(document.getElementById('f-feetotal').value) || 0);
+  const photoFile = document.getElementById('f-photo').files[0] || null;
   const contacts = (state.modal.contacts||[]).filter(c=>c.phone && c.phone.trim());
   if (!rollNo || !name){ toast('Roll number and name are required.','error'); return; }
+
+  let initialPaid=0, initMethod='cash', initUid='', initBank='';
+  if (!originalRollNo){
+    initialPaid = Math.max(0, parseFloat(document.getElementById('f-feepaid').value) || 0);
+    initMethod = document.getElementById('f-paymethod').value;
+    initUid = document.getElementById('f-payuid') ? document.getElementById('f-payuid').value.trim() : '';
+    initBank = document.getElementById('f-paybank') ? document.getElementById('f-paybank').value.trim() : '';
+  }
+  const payload = { name, room, gender, batch_id:batchId, father_name:father, mother_name:mother, address, contacts, fee_mode:feeMode, fee_total:feeTotal };
+  const args = { rollNo, name, payload, originalRollNo, photoFile, initialPaid, initMethod, initUid, initBank };
+
+  // Hard block: roll number already belongs to someone else — check the database directly
+  // (not just state.students, which only reflects whichever view — active or recycle bin — is currently loaded)
+  if (!originalRollNo){
+    try{
+      const existing = await sbSelect('students', `?roll_no=ilike.${encodeURIComponent(rollNo)}&select=roll_no,archived,name`);
+      if (existing && existing.length){
+        const ex = existing[0];
+        toast(ex.archived ? `Roll number "${rollNo}" belongs to an archived student (${ex.name}) — restore them from the recycle bin, or use a different roll number.` : `Roll number "${rollNo}" is already in use by an existing student.`, 'error');
+        return;
+      }
+    }catch(e){ /* if the check itself fails, fall through — the insert will still safely reject a true duplicate */ }
+  }
+  // Soft check: same name exists elsewhere — could be the same person re-entered, or just a coincidence
+  const nameDup = state.students.find(s => s.name.trim().toLowerCase()===name.toLowerCase() && s.roll_no.toLowerCase()!==(originalRollNo||'').toLowerCase());
+  if (nameDup){
+    confirmAction(`A student named "${name}" already exists — roll ${nameDup.roll_no}, room ${nameDup.room||'—'}. Continue adding this as a separate student?`, ()=> actuallySubmitStudent(args));
+    return;
+  }
+  await actuallySubmitStudent(args);
+}
+async function actuallySubmitStudent({ rollNo, name, payload, originalRollNo, photoFile, initialPaid, initMethod, initUid, initBank }){
   const btn = document.getElementById('student-save-btn'); if (btn){ btn.disabled=true; btn.textContent='Saving…'; }
   try{
-    const payload = { name, room, gender, batch_id:batchId, father_name:father, mother_name:mother, address, contacts, fee_mode:feeMode, fee_total:feeTotal };
     if (!originalRollNo){
       payload.fee_paid = 0;
       const inserted = await sbInsert('students', Object.assign({ roll_no: rollNo }, payload));
       const row = inserted[0];
       if (photoFile){ const path = await uploadStudentPhoto(row.id, photoFile); await sbUpdate('students', `?id=eq.${row.id}`, { photo_path: path }); }
-      const initialPaid = parseFloat(document.getElementById('f-feepaid').value) || 0;
       if (initialPaid > 0){
-        const method = document.getElementById('f-paymethod').value;
-        const uid = document.getElementById('f-payuid') ? document.getElementById('f-payuid').value.trim() : '';
-        const bank = document.getElementById('f-paybank') ? document.getElementById('f-paybank').value.trim() : '';
-        try{ await sbRpc('record_initial_payment', { p_roll_no: rollNo, p_amount: initialPaid, p_method: method, p_uid: uid, p_bank: bank }); }
+        try{ await sbRpc('record_initial_payment', { p_roll_no: rollNo, p_amount: initialPaid, p_method: initMethod, p_uid: initUid, p_bank: initBank }); }
         catch(payErr){ toast('Student added, but the initial payment could not be recorded: '+payErr.message, 'error'); }
       }
       await sbInsert('activity_log', { type:'student_add', roll_no: rollNo, details:`${name} (${rollNo})`, by_name: state.user.name });
@@ -1479,19 +1507,20 @@ function printAllIDCards(){
 /* ============================================================
    BULK IMPORT / EXPORT (admin only)
    ============================================================ */
-function openBulkImport(){ state.modal={type:'bulkImport'}; update(); }
+function openBulkImport(){ state.modal={type:'bulkImport', csvText:''}; update(); }
 function bulkImportModalHTML(){
+  const csvText = (state.modal && state.modal.csvText) || '';
   return `<div class="modal-overlay" onclick="if(event.target===this) closeModal()">
     <div class="modal modal-lg">
       <h3>Bulk import students</h3>
-      <p class="muted">One student per line, 12 columns: <span class="mono">RollNo,Name,Room,Gender,Batch,FatherName,MotherName,Address,Contacts,FeeMode,FeeTotal,FeePaid</span></p>
+      <p class="muted">Column order doesn't matter and columns can be left out — name your header row and we'll match by name. Recognized columns: <span class="mono">RollNo, Name, Room, Gender, Batch, FatherName, MotherName, Address, Contacts, FeeMode, FeeTotal, FeePaid</span>.</p>
       <p class="muted"><b>Gender</b>: male/female/other (or blank). <b>Batch</b>: the batch's short code or name (must already exist — create batches first). <b>Contacts</b>: <span class="mono">Label:Phone;Label:Phone</span>, e.g. <span class="mono">Student:9876543210;Father:9123456780</span>. <b>FeeMode</b>: monthly or onetime.</p>
       <div class="form-grid" style="margin:14px 0;">
         <label>Upload a .csv file<input type="file" id="csv-file-input" accept=".csv,text/csv" onchange="onCsvFileSelected(event)" /></label>
       </div>
       <p class="muted" style="margin:0 0 6px;">…or paste it directly:</p>
       <button class="link-btn" onclick="downloadCSVTemplate()">Download template</button>
-      <textarea id="csv-textarea" class="csv-textarea" rows="10" placeholder="BCA2024015,Aman Kumar,B-12,male,24I,Ram Kumar,Sita Devi,123 MG Road Patna,Student:9876543210;Father:9123456780,onetime,60000,30000"></textarea>
+      <textarea id="csv-textarea" class="csv-textarea" rows="10" placeholder="RollNo,Name,Room,Gender,Batch,FatherName,MotherName,Address,Contacts,FeeMode,FeeTotal,FeePaid" oninput="onCsvTextareaInput(this.value)">${esc(csvText)}</textarea>
       <p class="muted">Only photos can't be bulk-imported — add those individually via Edit afterward. Everything else is here so you shouldn't need to.</p>
       <div class="modal-actions">
         <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
@@ -1500,11 +1529,16 @@ function bulkImportModalHTML(){
     </div>
   </div>`;
 }
+function onCsvTextareaInput(v){ if (state.modal) state.modal.csvText = v; }
 function onCsvFileSelected(event){
   const file = event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = (e)=>{ document.getElementById('csv-textarea').value = e.target.result; toast('CSV loaded — review below, then click Import.','success'); };
+  reader.onload = (e)=>{
+    if (state.modal) state.modal.csvText = e.target.result;
+    update(); // safe now — the textarea's content comes from state.modal.csvText, so the re-render restores it correctly instead of wiping it
+    toast('CSV loaded — review below, then click Import.','success');
+  };
   reader.onerror = ()=> toast('Could not read that file.','error');
   reader.readAsText(file);
 }
@@ -1525,31 +1559,72 @@ function findBatchByCodeOrName(text){
   if (!q) return null;
   return state.batches.find(b=> (b.short_code||'').toLowerCase()===q || b.name.toLowerCase()===q) || null;
 }
+const CSV_COLUMN_ALIASES = {
+  rollno: ['rollno','roll','rollnumber'],
+  name: ['name','studentname','fullname'],
+  room: ['room','roomno','roomnumber'],
+  gender: ['gender','sex'],
+  batch: ['batch','batchcode','batchname'],
+  fathername: ['fathername','fathersname','father'],
+  mothername: ['mothername','mothersname','mother'],
+  address: ['address'],
+  contacts: ['contacts','contact','phone','phonenumber','phonenumbers'],
+  feemode: ['feemode','mode'],
+  feetotal: ['feetotal','totalfee','fee','amount'],
+  feepaid: ['feepaid','paid','amountpaid','feepaidsofar']
+};
+const CSV_DEFAULT_ORDER = ['rollno','name','room','gender','batch','fathername','mothername','address','contacts','feemode','feetotal','feepaid'];
+function normalizeHeaderToken(s){ return String(s||'').trim().toLowerCase().replace(/[^a-z]/g,''); }
 async function parseAndImportCSV(){
   const raw = document.getElementById('csv-textarea').value;
   const lines = raw.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+  if (!lines.length){ toast('Paste or upload some CSV data first.','error'); return; }
   const btn = document.getElementById('import-btn'); if (btn){ btn.disabled=true; btn.textContent='Importing…'; }
-  let added=0, skipped=0, batchMisses=0;
-  const existingRolls = new Set(state.students.map(s=>s.roll_no.toLowerCase()));
+
+  const firstRowTokens = lines[0].split(',').map(normalizeHeaderToken);
+  const looksLikeHeader = firstRowTokens.some(t=>CSV_COLUMN_ALIASES.rollno.includes(t)) && firstRowTokens.some(t=>CSV_COLUMN_ALIASES.name.includes(t));
+  const dataLines = looksLikeHeader ? lines.slice(1) : lines;
+
+  function colIndex(key){
+    if (looksLikeHeader){
+      const aliases = CSV_COLUMN_ALIASES[key] || [key];
+      for (const a of aliases){ const idx = firstRowTokens.indexOf(a); if (idx!==-1) return idx; }
+      return -1;
+    }
+    return CSV_DEFAULT_ORDER.indexOf(key);
+  }
+  const idx = {}; CSV_DEFAULT_ORDER.forEach(k=>{ idx[k]=colIndex(k); });
+  function getVal(parts, key){ const i=idx[key]; return (i===-1 || i==null) ? '' : (parts[i]||'').trim(); }
+
+  let added=0, skipped=0, batchMisses=0, nameDupes=0;
+  let allExisting;
+  try{ allExisting = await sbSelect('students', '?select=roll_no,name'); }catch(e){ allExisting = state.students; }
+  const existingRolls = new Set(allExisting.map(s=>s.roll_no.toLowerCase()));
+  const existingNames = new Set(allExisting.map(s=>s.name.trim().toLowerCase()));
   const rowsToInsert = [];
   const initialPayments = []; // {rollNo, amount}
-  lines.forEach((line,i)=>{
-    if (i===0 && /roll/i.test(line) && /name/i.test(line)) return;
+  dataLines.forEach((line)=>{
     const parts = line.split(',').map(p=>p.trim());
-    const [rollNo,name,room,gender,batchText,father,mother,address,contactsText,feeMode,feeTotal,feePaid] = parts;
+    const rollNo = getVal(parts,'rollno');
+    const name = getVal(parts,'name');
     if (!rollNo || !name || existingRolls.has(rollNo.toLowerCase())){ skipped++; return; }
+    if (existingNames.has(name.toLowerCase())) nameDupes++;
+    const room = getVal(parts,'room');
+    const gender = getVal(parts,'gender').toLowerCase();
+    const batchText = getVal(parts,'batch');
     const batch = findBatchByCodeOrName(batchText);
     if (batchText && !batch) batchMisses++;
-    const paidAmount = parseFloat(feePaid)||0;
-    if (paidAmount>0) initialPayments.push({ rollNo, amount:paidAmount });
-    rowsToInsert.push({ roll_no:rollNo, name, room:room||'',
-      gender: ['male','female','other'].includes((gender||'').toLowerCase()) ? gender.toLowerCase() : null,
+    const feePaidVal = parseFloat(getVal(parts,'feepaid'))||0;
+    if (feePaidVal>0) initialPayments.push({ rollNo, amount:feePaidVal });
+    rowsToInsert.push({ roll_no:rollNo, name, room,
+      gender: ['male','female','other'].includes(gender) ? gender : null,
       batch_id: batch?batch.id:null,
-      father_name:father||'', mother_name:mother||'', address:address||'',
-      contacts: parseContactsField(contactsText),
-      fee_mode: (feeMode==='monthly'?'monthly':'onetime'),
-      fee_total:parseFloat(feeTotal)||0, fee_paid:0 });
+      father_name:getVal(parts,'fathername'), mother_name:getVal(parts,'mothername'), address:getVal(parts,'address'),
+      contacts: parseContactsField(getVal(parts,'contacts')),
+      fee_mode: (getVal(parts,'feemode').toLowerCase()==='monthly'?'monthly':'onetime'),
+      fee_total:parseFloat(getVal(parts,'feetotal'))||0, fee_paid:0 });
     existingRolls.add(rollNo.toLowerCase());
+    existingNames.add(name.toLowerCase());
     added++;
   });
   try{
@@ -1561,9 +1636,9 @@ async function parseAndImportCSV(){
         await Promise.all(chunk.map(p => sbRpc('record_initial_payment', { p_roll_no:p.rollNo, p_amount:p.amount, p_method:'cash', p_uid:'', p_bank:'' }).catch(()=>{})));
       }
     }
-    await sbInsert('activity_log', { type:'student_add', details:`Bulk import: ${added} added, ${skipped} skipped${batchMisses?`, ${batchMisses} batch reference(s) not found`:''}`, by_name: state.user.name });
+    await sbInsert('activity_log', { type:'student_add', details:`Bulk import: ${added} added, ${skipped} skipped${batchMisses?`, ${batchMisses} batch reference(s) not found`:''}${nameDupes?`, ${nameDupes} name match(es) with existing students`:''}`, by_name: state.user.name });
     closeModal();
-    toast(`${added} student(s) added${skipped?`, ${skipped} skipped`:''}${batchMisses?`, ${batchMisses} batch code(s) not matched`:''}.`,'success');
+    toast(`${added} student(s) added${skipped?`, ${skipped} skipped`:''}${batchMisses?`, ${batchMisses} batch code(s) not matched`:''}${nameDupes?`. Note: ${nameDupes} share a name with an existing student — worth a quick check.`:''}`,'success');
     await Promise.all([loadStudents(), loadActivity()]);
   }catch(e){ toast(e.message,'error'); }
   update();
@@ -2166,6 +2241,16 @@ async function recordPayment(rollNo){
   const note = document.getElementById('pay-note').value.trim();
   if (!amount || amount<=0){ toast('Enter a valid amount.','error'); return; }
   if (method==='online' && (!uid || !bank)){ toast('Enter the transaction UID and bank for online payments.','error'); return; }
+
+  const recentPayments = (state.modal && state.modal.type==='profile' && state.modal.payments) || [];
+  const dup = recentPayments.find(p => Number(p.amount)===amount && (Date.now()-new Date(p.created_at).getTime()) < 24*60*60*1000);
+  if (dup){
+    confirmAction(`A payment of ${fmtMoney(amount)} was already recorded for this student on ${fmtTime(dup.created_at)}${dup.recorded_by_name?' by '+dup.recorded_by_name:''}. This looks like it might be the same transaction — record it again anyway?`, ()=> actuallyRecordPayment(rollNo, amount, method, uid, bank, note));
+    return;
+  }
+  await actuallyRecordPayment(rollNo, amount, method, uid, bank, note);
+}
+async function actuallyRecordPayment(rollNo, amount, method, uid, bank, note){
   const btn = document.getElementById('pay-btn'); if (btn){ btn.disabled=true; btn.textContent='Recording…'; }
   try{
     await sbRpc('record_payment', { p_roll_no: rollNo, p_amount: amount, p_note: note, p_method: method, p_uid: uid, p_bank: bank });
