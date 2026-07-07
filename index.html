@@ -349,6 +349,7 @@ a{color:var(--primary);}
    ============================================================ */
 const HARDCODED_SUPABASE_URL = 'https://dthsknsixkyyrkvfvtzi.supabase.co';
 const HARDCODED_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0aHNrbnNpeGt5eXJrdmZ2dHppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNjUyMDcsImV4cCI6MjA5Nzg0MTIwN30.gPmmlpdlxVc-FI7FrcBmkEPCE-ASS6-2Y-9_Q3mPpYA';
+
 /* ============================================================
    STATE
    ============================================================ */
@@ -1590,7 +1591,7 @@ function bulkImportModalHTML(){
   return `<div class="modal-overlay" onclick="if(event.target===this) closeModal()">
     <div class="modal modal-lg">
       <h3>Bulk import students</h3>
-      <p class="muted">Column order doesn't matter and columns can be left out — name your header row and we'll match by name. Recognized columns: <span class="mono">RollNo, Name, Room, Gender, Batch, FatherName, MotherName, Address, Contacts, FeeMode, FeeTotal, FeePaid</span>.</p>
+      <p class="muted">Column order doesn't matter and columns can be left out — name your header row and we'll match by name. Recognized columns: <span class="mono">RollNo, Name, Room, Gender, Batch, FatherName, MotherName, VillageTown, PO, PS, District, State, PIN, Contacts, FeeMode, FeeTotal, CashPaid, OnlinePaid, OnlineUID, OnlineBank</span>.</p>
       <p class="muted"><b>Gender</b>: male/female/other (or blank). <b>Batch</b>: the batch's short code or name (must already exist — create batches first). <b>Contacts</b>: <span class="mono">Label:Phone;Label:Phone</span>, e.g. <span class="mono">Student:9876543210;Father:9123456780</span>. <b>FeeMode</b>: monthly or onetime.</p>
       <div class="form-grid" style="margin:14px 0;">
         <label>Upload a .csv file<input type="file" id="csv-file-input" accept=".csv,text/csv" onchange="onCsvFileSelected(event)" /></label>
@@ -1620,7 +1621,7 @@ function onCsvFileSelected(event){
   reader.readAsText(file);
 }
 function downloadCSVTemplate(){
-  downloadTextFile('RollNo,Name,Room,Gender,Batch,FatherName,MotherName,VillageTown,PO,PS,PIN,Contacts,FeeMode,FeeTotal,CashPaid,OnlinePaid,OnlineUID,OnlineBank\nBCA2024015,Aman Kumar,B-12,male,24I,Ram Kumar,Sita Devi,123 MG Road Patna,Student:9876543210;Father:9123456780,onetime,60000,30000', 'student-import-template.csv', 'text/csv');
+  downloadTextFile('RollNo,Name,Room,Gender,Batch,FatherName,MotherName,VillageTown,PO,PS,District,State,PIN,Contacts,FeeMode,FeeTotal,CashPaid,OnlinePaid,OnlineUID,OnlineBank\nBCA2024015,Aman Kumar,B-12,male,24I,Ram Kumar,Sita Devi,Barasat,Barasat,Barasat PS,North 24 Parganas,West Bengal,700124,Student:9876543210;Guardian:9123456780,onetime,60000,30000,30000,UTR123456,SBI', 'student-import-template.csv', 'text/csv');
 }
 function parseContactsField(raw){
   if (!raw) return [];
@@ -1735,11 +1736,11 @@ async function parseAndImportCSV(){
   update();
 }
 function exportCSV(){
-  const header = 'RollNo,Name,Room,Gender,Batch,FatherName,MotherName,VillageTown,PO,PS,PIN,Contacts,FeeMode,FeeTotal';
+  const header = 'RollNo,Name,Room,Gender,Batch,FatherName,MotherName,VillageTown,PO,PS,District,State,PIN,Contacts,FeeMode,FeeTotal';
   const rows = state.students.map(s=>{
     const batch = state.batches.find(b=>b.id===s.batch_id);
     const contacts = parseContacts(s.contacts).map(c=>`${c.label}:${c.phone}`).join(';');
-    return [s.roll_no,s.name,s.room,s.gender||'',batch?(batch.short_code||batch.name):'',s.father_name,s.mother_name,s.addr_village_town||'',s.addr_po||'',s.addr_ps||'',s.addr_pin||'',contacts,s.fee_mode,s.fee_total].map(csvEscape).join(',');
+    return [s.roll_no,s.name,s.room,s.gender||'',batch?(batch.short_code||batch.name):'',s.father_name,s.mother_name,s.addr_village_town||'',s.addr_po||'',s.addr_ps||'',s.addr_district||'',s.addr_state||'',s.addr_pin||'',contacts,s.fee_mode,s.fee_total].map(csvEscape).join(',');
   });
   downloadTextFile([header,...rows].join('\n'), 'hostel-students-backup.csv', 'text/csv');
 }
@@ -2503,7 +2504,7 @@ async function init(){
       await getValidAccessToken();
       await loadMyProfile();
       if (state.user.role !== 'admin'){
-        // re-check whether our most recent login request (if any) is still pending/apsuproved
+        // re-check whether our most recent login request (if any) is still pending/approved
         try{
           const rows = await sbSelect('login_requests', `?user_id=eq.${state.user.id}&select=*&order=requested_at.desc&limit=1`);
           const latest = rows && rows[0];
