@@ -217,7 +217,14 @@ a{color:var(--primary);}
 .sc-actions{display:flex; gap:6px; margin-top:2px; flex-wrap:wrap;}
 .out-pill{display:inline-flex; align-items:center; gap:4px; background:var(--amber-soft); color:var(--amber); font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:20px; text-transform:uppercase;}
 .pay-pill{background:var(--red-soft); color:var(--red); width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; margin-left:auto;}
-.paid-tick{background:var(--green-soft); color:var(--green); width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; margin-left:auto;}
+.paid-tick{background:var(--green-soft); color:var(--green); width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; margin-left:auto;}
+.fee-cleared-badge{display:inline-flex; align-items:center; gap:4px; background:var(--amber-soft); color:var(--amber); font-weight:700; border-radius:20px; padding:3px 10px; font-size:12px;}
+.credit-badge{display:inline-block; background:var(--green-soft); color:var(--green); font-weight:700; border-radius:20px; padding:2px 9px; font-size:11px; margin-top:3px;}
+.contacts-list{display:flex; flex-direction:column; gap:8px; margin-bottom:4px;}
+.contact-list-row{display:flex; align-items:center; gap:12px; padding:10px 14px; background:var(--bg); border:1px solid var(--border); border-radius:10px;}
+.contact-list-label{font-weight:700; font-size:13px; min-width:100px;}
+.contact-list-phone{font-family:var(--font-mono); font-size:14px; color:var(--primary); text-decoration:none;}
+.contact-list-phone:hover{text-decoration:underline;}
 
 .modal-overlay{position:fixed; inset:0; background:rgba(20,22,35,.5); display:flex; align-items:center; justify-content:center; padding:16px; z-index:50;}
 .modal{background:var(--surface); border-radius:18px; padding:28px; width:100%; max-width:440px; max-height:90vh; overflow-y:auto; box-shadow:0 16px 48px rgba(0,0,0,.25);}
@@ -340,7 +347,6 @@ a{color:var(--primary);}
    ============================================================ */
 const HARDCODED_SUPABASE_URL = 'https://dthsknsixkyyrkvfvtzi.supabase.co';
 const HARDCODED_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0aHNrbnNpeGt5eXJrdmZ2dHppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNjUyMDcsImV4cCI6MjA5Nzg0MTIwN30.gPmmlpdlxVc-FI7FrcBmkEPCE-ASS6-2Y-9_Q3mPpYA';
-
 
 /* ============================================================
    STATE
@@ -947,7 +953,7 @@ function renderStudentCard(s){
         <div class="sc-name">${esc(s.name)}</div>
         <div class="sc-roll">${esc(s.roll_no)}</div>
       </div>
-      ${due>0? `<span class="pay-pill" title="Dues pending">₹</span>` : `<span class="paid-tick" title="Fully paid">✓</span>`}
+      ${due>0? `<span class="pay-pill" title="Dues pending">₹</span>` : `<span class="paid-tick" title="Fully paid — fee cleared">⭐</span>`}
     </div>
     ${leave && leave.status==='out' ? `<span class="out-pill">● Out since ${fmtTime(leave.out_at)}</span>` : leave? `<span class="out-pill" style="background:var(--amber-soft);color:var(--amber);">● Permitted · token ${esc(leave.token||'')}</span>` : ''}
     <div class="sc-meta"><span>${esc(s.room||'—')}${batch?` · <span class="mono">${esc(batch.short_code||batch.name)}</span>`:''}</span><span class="${due>0?'text-due':'text-paid'}">${due>0?fmtMoney(due):'Paid'}</span></div>
@@ -1090,6 +1096,11 @@ function deleteBatch(id){
   });
 }
 function onBatchChange(){ applyBatchFeeAmount(); }
+function onOnlinePaidChange(){
+  const amount = parseFloat(document.getElementById('f-online-paid').value)||0;
+  const el = document.getElementById('f-reg-online-fields');
+  if (el) el.style.display = amount>0 ? 'grid' : 'none';
+}
 function applyBatchFeeAmount(){
   const batchId = document.getElementById('f-batch').value;
   const batch = state.batches.find(b=>b.id===batchId);
@@ -1157,7 +1168,8 @@ async function submitBatchAssign(){
 function openStudentForm(rollNo){
   const existing = rollNo ? state.students.find(s=>s.roll_no.toLowerCase()===rollNo.toLowerCase()) : null;
   const contacts = existing ? parseContacts(existing.contacts) : [];
-  state.modal = { type:'studentForm', existing, originalRollNo: rollNo, contacts: contacts.length?contacts:[{label:'Student',phone:''}] };
+  const defaults = contacts.length ? contacts : [{label:'Student',phone:''},{label:'Guardian',phone:''}];
+  state.modal = { type:'studentForm', existing, originalRollNo: rollNo, contacts: defaults };
   update();
 }
 function syncContactsFromDOM(){
@@ -1167,11 +1179,23 @@ function syncContactsFromDOM(){
     if (l) c.label = l.value; if (p) c.phone = p.value;
   });
 }
-function addContactRow(){ syncContactsFromDOM(); state.modal.contacts.push({label:'',phone:''}); update(); }
-function removeContactRow(idx){ syncContactsFromDOM(); state.modal.contacts.splice(idx,1); update(); }
+function addContactRow(){
+  syncContactsFromDOM();
+  state.modal.contacts.push({label:'',phone:''});
+  const holder = document.getElementById('contacts-holder');
+  if (holder) holder.innerHTML = contactRowsHTML(state.modal.contacts);
+  else update();
+}
+function removeContactRow(idx){
+  syncContactsFromDOM();
+  state.modal.contacts.splice(idx,1);
+  const holder = document.getElementById('contacts-holder');
+  if (holder) holder.innerHTML = contactRowsHTML(state.modal.contacts);
+  else update();
+}
 function contactRowsHTML(contacts){
   return contacts.map((c,i)=>`<div class="contact-row">
-    <input class="label-input" id="contact-label-${i}" placeholder="Label (Student / Father / ...)" value="${esc(c.label)}" />
+    <input class="label-input" id="contact-label-${i}" placeholder="e.g. Student / Guardian / Father" value="${esc(c.label)}" />
     <input class="phone-input" id="contact-phone-${i}" placeholder="Phone number" value="${esc(c.phone)}" />
     <button type="button" class="icon-btn icon-danger" onclick="removeContactRow(${i})">✕</button>
   </div>`).join('');
@@ -1202,9 +1226,17 @@ function studentFormModalHTML(existing, contacts){
         <label>Father's name<input id="f-father" value="${esc(s.father_name||'')}" /></label>
         <label>Mother's name<input id="f-mother" value="${esc(s.mother_name||'')}" /></label>
       </div>
-      <div class="form-grid"><label>Address<textarea id="f-address" rows="2">${esc(s.address||'')}</textarea></label></div>
       <hr class="section-divider" />
-      <label style="margin-bottom:8px;">Contact numbers</label>
+      <p class="muted" style="margin:0 0 10px; font-weight:700;">Address</p>
+      <div class="form-grid two-col">
+        <label>Village / Town<input id="f-addr-village" value="${esc(s.addr_village_town||'')}" placeholder="Village or town name" /></label>
+        <label>Post Office (P.O)<input id="f-addr-po" value="${esc(s.addr_po||'')}" placeholder="Post office name" /></label>
+        <label>Police Station (P.S)<input id="f-addr-ps" value="${esc(s.addr_ps||'')}" placeholder="Police station / thana" /></label>
+        <label>PIN code<input id="f-addr-pin" value="${esc(s.addr_pin||'')}" placeholder="6-digit PIN" maxlength="6" /></label>
+      </div>
+      <hr class="section-divider" />
+      <p class="muted" style="margin:0 0 8px; font-weight:700;">Contact numbers</p>
+      <p class="muted" style="margin:0 0 10px;">First contact is the student's own number, second is the guardian/parent number. Add more if needed.</p>
       <div id="contacts-holder">${contactRowsHTML(contacts)}</div>
       <button type="button" class="link-btn" onclick="addContactRow()">+ Add another contact</button>
       <hr class="section-divider" />
@@ -1219,11 +1251,13 @@ function studentFormModalHTML(existing, contacts){
       <div class="form-grid">
         <label>Fee paid so far<div style="margin-top:5px; padding:10px 11px; background:var(--input-bg); border:1.5px solid var(--border); border-radius:9px;">${fmtMoney(s.fee_paid)} <span class="muted">— use "Record a payment" in their profile to add more</span></div></label>
       </div>` : `
+      <p class="muted" style="margin:0 0 10px; font-weight:700;">Payment at registration</p>
+      <p class="muted" style="margin:0 0 10px;">If the student paid partly in cash and partly online, fill both. Leave at 0 if nothing was collected yet.</p>
       <div class="form-grid two-col">
-        <label>Fee paid at registration (₹)<input id="f-feepaid" type="number" value="0" onchange="onAddFeePaidChange()" /></label>
-        <label>Method<select id="f-paymethod" onchange="onAddFeePaidChange()"><option value="cash">Cash</option><option value="online">Online</option></select></label>
+        <label>Cash paid (₹)<input id="f-cash-paid" type="number" value="0" min="0" /></label>
+        <label>Online paid (₹)<input id="f-online-paid" type="number" value="0" min="0" oninput="onOnlinePaidChange()" /></label>
       </div>
-      <div class="form-grid two-col" id="f-online-fields" style="display:none;">
+      <div class="form-grid two-col" id="f-reg-online-fields" style="display:none;">
         <label>Transaction UID<input id="f-payuid" /></label>
         <label>Bank<input id="f-paybank" /></label>
       </div>`}
@@ -1233,12 +1267,6 @@ function studentFormModalHTML(existing, contacts){
       </div>
     </div>
   </div>`;
-}
-function onAddFeePaidChange(){
-  const amount = parseFloat(document.getElementById('f-feepaid').value)||0;
-  const method = document.getElementById('f-paymethod').value;
-  const el = document.getElementById('f-online-fields');
-  if (el) el.style.display = (amount>0 && method==='online') ? 'grid' : 'none';
 }
 async function submitStudentForm(){
   syncContactsFromDOM();
@@ -1250,22 +1278,28 @@ async function submitStudentForm(){
   const batchId = document.getElementById('f-batch').value || null;
   const father = document.getElementById('f-father').value.trim();
   const mother = document.getElementById('f-mother').value.trim();
-  const address = document.getElementById('f-address').value.trim();
+  const addrVillage = (document.getElementById('f-addr-village')||{value:''}).value.trim();
+  const addrPo = (document.getElementById('f-addr-po')||{value:''}).value.trim();
+  const addrPs = (document.getElementById('f-addr-ps')||{value:''}).value.trim();
+  const addrPin = (document.getElementById('f-addr-pin')||{value:''}).value.trim();
   const feeMode = document.getElementById('f-feemode').value;
   const feeTotal = Math.max(0, parseFloat(document.getElementById('f-feetotal').value) || 0);
   const photoFile = document.getElementById('f-photo').files[0] || null;
   const contacts = (state.modal.contacts||[]).filter(c=>c.phone && c.phone.trim());
   if (!rollNo || !name){ toast('Roll number and name are required.','error'); return; }
 
-  let initialPaid=0, initMethod='cash', initUid='', initBank='';
+  let cashPaid=0, onlinePaid=0, initUid='', initBank='';
   if (!originalRollNo){
-    initialPaid = Math.max(0, parseFloat(document.getElementById('f-feepaid').value) || 0);
-    initMethod = document.getElementById('f-paymethod').value;
-    initUid = document.getElementById('f-payuid') ? document.getElementById('f-payuid').value.trim() : '';
-    initBank = document.getElementById('f-paybank') ? document.getElementById('f-paybank').value.trim() : '';
+    cashPaid = Math.max(0, parseFloat((document.getElementById('f-cash-paid')||{value:'0'}).value) || 0);
+    onlinePaid = Math.max(0, parseFloat((document.getElementById('f-online-paid')||{value:'0'}).value) || 0);
+    initUid = (document.getElementById('f-payuid')||{value:''}).value.trim();
+    initBank = (document.getElementById('f-paybank')||{value:''}).value.trim();
+    if (onlinePaid>0 && (!initUid || !initBank)){ toast('Enter the transaction UID and bank for the online portion.','error'); return; }
   }
-  const payload = { name, room, gender, batch_id:batchId, father_name:father, mother_name:mother, address, contacts, fee_mode:feeMode, fee_total:feeTotal };
-  const args = { rollNo, name, payload, originalRollNo, photoFile, initialPaid, initMethod, initUid, initBank };
+  const payload = { name, room, gender, batch_id:batchId, father_name:father, mother_name:mother,
+    addr_village_town:addrVillage, addr_po:addrPo, addr_ps:addrPs, addr_pin:addrPin,
+    contacts, fee_mode:feeMode, fee_total:feeTotal };
+  const args = { rollNo, name, payload, originalRollNo, photoFile, cashPaid, onlinePaid, initUid, initBank };
 
   // Hard block: roll number already belongs to someone else — check the database directly
   // (not just state.students, which only reflects whichever view — active or recycle bin — is currently loaded)
@@ -1287,7 +1321,7 @@ async function submitStudentForm(){
   }
   await actuallySubmitStudent(args);
 }
-async function actuallySubmitStudent({ rollNo, name, payload, originalRollNo, photoFile, initialPaid, initMethod, initUid, initBank }){
+async function actuallySubmitStudent({ rollNo, name, payload, originalRollNo, photoFile, cashPaid, onlinePaid, initUid, initBank }){
   const btn = document.getElementById('student-save-btn'); if (btn){ btn.disabled=true; btn.textContent='Saving…'; }
   try{
     if (!originalRollNo){
@@ -1295,8 +1329,8 @@ async function actuallySubmitStudent({ rollNo, name, payload, originalRollNo, ph
       const inserted = await sbInsert('students', Object.assign({ roll_no: rollNo }, payload));
       const row = inserted[0];
       if (photoFile){ const path = await uploadStudentPhoto(row.id, photoFile); await sbUpdate('students', `?id=eq.${row.id}`, { photo_path: path }); }
-      if (initialPaid > 0){
-        try{ await sbRpc('record_initial_payment', { p_roll_no: rollNo, p_amount: initialPaid, p_method: initMethod, p_uid: initUid, p_bank: initBank }); }
+      if ((cashPaid||0) > 0 || (onlinePaid||0) > 0){
+        try{ await sbRpc('record_split_payment', { p_roll_no: rollNo, p_cash_amount: cashPaid||0, p_online_amount: onlinePaid||0, p_uid: initUid, p_bank: initBank }); }
         catch(payErr){ toast('Student added, but the initial payment could not be recorded: '+payErr.message, 'error'); }
       }
       await sbInsert('activity_log', { type:'student_add', roll_no: rollNo, details:`${name} (${rollNo})`, by_name: state.user.name });
@@ -1418,17 +1452,29 @@ function profileModalHTML(s, payments, leaveHistory, attendanceHistory){
         <div><span class="muted">Batch</span><div>${batch?esc(batch.name):'—'}</div></div>
         <div><span class="muted">Father's name</span><div>${esc(s.father_name||'—')}</div></div>
         <div><span class="muted">Mother's name</span><div>${esc(s.mother_name||'—')}</div></div>
-        <div style="grid-column:1/-1;"><span class="muted">Address</span><div>${esc(s.address||'—')}</div></div>
+        ${s.address&&!s.addr_village_town?`<div style="grid-column:1/-1;"><span class="muted">Address (legacy)</span><div>${esc(s.address)}</div></div>`:''}
       </div>
+      ${(s.addr_village_town||s.addr_po||s.addr_ps||s.addr_pin) ? `
+      <div class="profile-section-title">Address</div>
+      <div class="profile-grid">
+        ${s.addr_village_town?`<div><span class="muted">Village / Town</span><div>${esc(s.addr_village_town)}</div></div>`:''}
+        ${s.addr_po?`<div><span class="muted">P.O</span><div>${esc(s.addr_po)}</div></div>`:''}
+        ${s.addr_ps?`<div><span class="muted">P.S</span><div>${esc(s.addr_ps)}</div></div>`:''}
+        ${s.addr_pin?`<div><span class="muted">PIN</span><div>${esc(s.addr_pin)}</div></div>`:''}
+      </div>` : ''}
       <div class="profile-section-title">Contacts</div>
-      <div>${contacts.length? contacts.map(c=>`<span class="contact-chip"><span class="chip-label">${esc(c.label||'Contact')}</span> ${esc(c.phone)}</span>`).join('') : '<span class="muted">No contacts on file.</span>'}</div>
-
+      <div class="contacts-list">
+        ${contacts.length? contacts.map((c,i)=>`<div class="contact-list-row">
+          <span class="contact-list-label">${i===0?'📱 Student':i===1?'👤 Guardian':esc(c.label||'Contact')}</span>
+          <a href="tel:${esc(c.phone)}" class="contact-list-phone">${esc(c.phone)}</a>
+        </div>`).join('') : '<span class="muted">No contacts on file.</span>'}
+      </div>
       <div class="profile-section-title">Fee &amp; payments</div>
       <div class="profile-grid">
         <div><span class="muted">Mode</span><div>${s.fee_mode==='monthly'?'Monthly':'One-time'}</div></div>
         <div><span class="muted">Amount</span><div>${fmtMoney(s.fee_total)}</div></div>
         <div><span class="muted">Paid</span><div class="text-paid">${fmtMoney(s.fee_paid)}</div></div>
-        <div><span class="muted">Due</span><div class="${due>0?'text-due':'text-paid'}">${due>0?fmtMoney(due):'Fully paid'}</div></div>
+        <div><span class="muted">Balance</span><div>${due>0?`<span class="text-due">${fmtMoney(due)} due</span>`:`<span class="fee-cleared-badge">⭐ Fee Cleared</span>`}${s.fee_paid>s.fee_total?`<br><span class="credit-badge">Credit: ${fmtMoney(s.fee_paid-s.fee_total)}</span>`:''}</div></div>
       </div>
       ${canRecordPayment ? recordPaymentFormHTML(s.roll_no) : ''}
       ${payments && payments.length ? `<table class="table"><tbody>${payments.map(p=>`<tr><td>${fmtTime(p.created_at)}</td><td>${fmtMoney(p.amount)}</td><td class="muted">${esc(p.payment_method||'cash')}${p.payment_method==='online'&&p.bank_name?' · '+esc(p.bank_name):''}${p.payment_method==='online'&&p.transaction_uid?' · '+esc(p.transaction_uid):''}</td><td class="muted">${esc(p.recorded_by_name||'')}</td><td class="muted">${esc(p.note||'')}</td>${isAdmin?`<td class="row-actions"><button class="icon-btn" onclick="openEditPaymentModal('${escAttr(p.id)}','profile')">Edit</button><button class="icon-btn icon-danger" onclick="archivePaymentAction('${escAttr(p.id)}','profile')">Bin</button></td>`:''}</tr>`).join('')}</tbody></table>` : '<p class="muted">No payments recorded yet.</p>'}
@@ -1543,7 +1589,7 @@ function onCsvFileSelected(event){
   reader.readAsText(file);
 }
 function downloadCSVTemplate(){
-  downloadTextFile('RollNo,Name,Room,Gender,Batch,FatherName,MotherName,Address,Contacts,FeeMode,FeeTotal,FeePaid\nBCA2024015,Aman Kumar,B-12,male,24I,Ram Kumar,Sita Devi,123 MG Road Patna,Student:9876543210;Father:9123456780,onetime,60000,30000', 'student-import-template.csv', 'text/csv');
+  downloadTextFile('RollNo,Name,Room,Gender,Batch,FatherName,MotherName,VillageTown,PO,PS,PIN,Contacts,FeeMode,FeeTotal,CashPaid,OnlinePaid,OnlineUID,OnlineBank\nBCA2024015,Aman Kumar,B-12,male,24I,Ram Kumar,Sita Devi,123 MG Road Patna,Student:9876543210;Father:9123456780,onetime,60000,30000', 'student-import-template.csv', 'text/csv');
 }
 function parseContactsField(raw){
   if (!raw) return [];
@@ -1567,13 +1613,20 @@ const CSV_COLUMN_ALIASES = {
   batch: ['batch','batchcode','batchname'],
   fathername: ['fathername','fathersname','father'],
   mothername: ['mothername','mothersname','mother'],
+  villagetown: ['villagetown','village','town','villagetownname'],
+  po: ['po','postoffice'],
+  ps: ['ps','policestation','thana'],
+  pin: ['pin','pincode','postalcode','zip'],
   address: ['address'],
   contacts: ['contacts','contact','phone','phonenumber','phonenumbers'],
   feemode: ['feemode','mode'],
   feetotal: ['feetotal','totalfee','fee','amount'],
-  feepaid: ['feepaid','paid','amountpaid','feepaidsofar']
+  cashpaid: ['cashpaid','cash'],
+  onlinepaid: ['onlinepaid','online'],
+  onlineuid: ['onlineuid','uid','utr','transactionid'],
+  onlinebank: ['onlinebank','bank']
 };
-const CSV_DEFAULT_ORDER = ['rollno','name','room','gender','batch','fathername','mothername','address','contacts','feemode','feetotal','feepaid'];
+const CSV_DEFAULT_ORDER = ['rollno','name','room','gender','batch','fathername','mothername','villagetown','po','ps','pin','contacts','feemode','feetotal','cashpaid','onlinepaid','onlineuid','onlinebank'];
 function normalizeHeaderToken(s){ return String(s||'').trim().toLowerCase().replace(/[^a-z]/g,''); }
 async function parseAndImportCSV(){
   const raw = document.getElementById('csv-textarea').value;
@@ -1616,10 +1669,15 @@ async function parseAndImportCSV(){
     if (batchText && !batch) batchMisses++;
     const feePaidVal = parseFloat(getVal(parts,'feepaid'))||0;
     if (feePaidVal>0) initialPayments.push({ rollNo, amount:feePaidVal });
+    const cashAmt = Math.max(0,parseFloat(getVal(parts,'cashpaid'))||0);
+    const onlineAmt = Math.max(0,parseFloat(getVal(parts,'onlinepaid'))||0);
+    if (cashAmt>0||onlineAmt>0) initialPayments.push({ rollNo, cashAmt, onlineAmt, uid:getVal(parts,'onlineuid'), bank:getVal(parts,'onlinebank') });
     rowsToInsert.push({ roll_no:rollNo, name, room,
       gender: ['male','female','other'].includes(gender) ? gender : null,
       batch_id: batch?batch.id:null,
-      father_name:getVal(parts,'fathername'), mother_name:getVal(parts,'mothername'), address:getVal(parts,'address'),
+      father_name:getVal(parts,'fathername'), mother_name:getVal(parts,'mothername'),
+      addr_village_town:getVal(parts,'villagetown'), addr_po:getVal(parts,'po'),
+      addr_ps:getVal(parts,'ps'), addr_pin:getVal(parts,'pin'),
       contacts: parseContactsField(getVal(parts,'contacts')),
       fee_mode: (getVal(parts,'feemode').toLowerCase()==='monthly'?'monthly':'onetime'),
       fee_total:parseFloat(getVal(parts,'feetotal'))||0, fee_paid:0 });
@@ -1633,7 +1691,7 @@ async function parseAndImportCSV(){
       toast(`Adding ${added} student(s) — recording ${initialPayments.length} initial payment(s)…`,'success');
       for (let i=0; i<initialPayments.length; i+=10){
         const chunk = initialPayments.slice(i, i+10);
-        await Promise.all(chunk.map(p => sbRpc('record_initial_payment', { p_roll_no:p.rollNo, p_amount:p.amount, p_method:'cash', p_uid:'', p_bank:'' }).catch(()=>{})));
+        await Promise.all(chunk.map(p => sbRpc('record_split_payment', { p_roll_no:p.rollNo, p_cash_amount:p.cashAmt||0, p_online_amount:p.onlineAmt||0, p_uid:p.uid||'', p_bank:p.bank||'' }).catch(()=>{})));
       }
     }
     await sbInsert('activity_log', { type:'student_add', details:`Bulk import: ${added} added, ${skipped} skipped${batchMisses?`, ${batchMisses} batch reference(s) not found`:''}${nameDupes?`, ${nameDupes} name match(es) with existing students`:''}`, by_name: state.user.name });
@@ -1644,11 +1702,11 @@ async function parseAndImportCSV(){
   update();
 }
 function exportCSV(){
-  const header = 'RollNo,Name,Room,Gender,Batch,FatherName,MotherName,Address,Contacts,FeeMode,FeeTotal,FeePaid';
+  const header = 'RollNo,Name,Room,Gender,Batch,FatherName,MotherName,VillageTown,PO,PS,PIN,Contacts,FeeMode,FeeTotal';
   const rows = state.students.map(s=>{
     const batch = state.batches.find(b=>b.id===s.batch_id);
     const contacts = parseContacts(s.contacts).map(c=>`${c.label}:${c.phone}`).join(';');
-    return [s.roll_no,s.name,s.room,s.gender||'',batch?(batch.short_code||batch.name):'',s.father_name,s.mother_name,s.address,contacts,s.fee_mode,s.fee_total,s.fee_paid].map(csvEscape).join(',');
+    return [s.roll_no,s.name,s.room,s.gender||'',batch?(batch.short_code||batch.name):'',s.father_name,s.mother_name,s.addr_village_town||'',s.addr_po||'',s.addr_ps||'',s.addr_pin||'',contacts,s.fee_mode,s.fee_total].map(csvEscape).join(',');
   });
   downloadTextFile([header,...rows].join('\n'), 'hostel-students-backup.csv', 'text/csv');
 }
