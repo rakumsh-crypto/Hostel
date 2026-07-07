@@ -188,9 +188,11 @@ a{color:var(--primary);}
 .badge{font-size:11px; padding:4px 10px; border-radius:20px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; display:inline-block;}
 .badge-scan{background:#E3ECF9; color:#3D6B9C;}
 .badge-payment{background:var(--green-soft); color:var(--green);}
+.badge-discount{background:var(--amber-soft); color:var(--amber);}
 .badge-student_add,.badge-student_edit{background:var(--primary-soft); color:var(--primary-dark);}
-.badge-student_archive,.badge-student_purge{background:var(--red-soft); color:var(--red);}
-.badge-student_restore{background:var(--green-soft); color:var(--green);}
+.badge-student_archive,.badge-student_purge,.badge-payment_archive{background:var(--red-soft); color:var(--red);}
+.badge-student_restore,.badge-payment_restore{background:var(--green-soft); color:var(--green);}
+.badge-payment_edit{background:var(--primary-soft); color:var(--primary-dark);}
 .badge-leave_granted,.badge-leave_out,.badge-leave_in{background:var(--amber-soft); color:var(--amber);}
 .badge-approved{background:var(--amber-soft); color:var(--amber);}
 .badge-out{background:#FDECEA; color:var(--red);}
@@ -347,7 +349,6 @@ a{color:var(--primary);}
    ============================================================ */
 const HARDCODED_SUPABASE_URL = 'https://dthsknsixkyyrkvfvtzi.supabase.co';
 const HARDCODED_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0aHNrbnNpeGt5eXJrdmZ2dHppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNjUyMDcsImV4cCI6MjA5Nzg0MTIwN30.gPmmlpdlxVc-FI7FrcBmkEPCE-ASS6-2Y-9_Q3mPpYA';
-
 /* ============================================================
    STATE
    ============================================================ */
@@ -510,6 +511,13 @@ function parseContacts(raw){
   if (typeof raw === 'string'){ try{ const p = JSON.parse(raw); return Array.isArray(p)?p:[]; }catch(e){ return []; } }
   return [];
 }
+function contactIconLabel(rawLabel){
+  const label = (rawLabel||'').trim();
+  const l = label.toLowerCase();
+  if (l.includes('student') || l.includes('self')) return '📱 ' + (label||'Student');
+  if (l.includes('guardian') || l.includes('parent') || l.includes('father') || l.includes('mother')) return '👤 ' + (label||'Guardian');
+  return '👤 ' + (label || 'Contact');
+}
 function hasPerm(p){ return !!(state.user && state.user.permissions && state.user.permissions[p]); }
 function canDo(p){ return state.user && (state.user.role==='admin' || (state.user.role==='accountant' && hasPerm(p))); }
 function filterByDate(list, from, to, field){
@@ -525,13 +533,14 @@ function filterByDate(list, from, to, field){
 function computeStats(){
   const totalStudents = state.students.length;
   const totalDue = state.students.reduce((sum,s)=>sum+Math.max(0,(s.fee_total||0)-(s.fee_paid||0)),0);
-  const totalCollected = state.students.reduce((sum,s)=>sum+(s.fee_paid||0),0);
+  const totalDiscounts = state._totalDiscounts || 0;
+  const totalCollected = Math.max(0, state.students.reduce((sum,s)=>sum+(s.fee_paid||0),0) - totalDiscounts);
   const totalAccountants = state.accounts.filter(a=>a.role==='accountant').length;
   const totalOut = state.leaves.filter(l=>l.status==='out').length;
   const fullyPaid = state.students.filter(s=>(s.fee_total||0)<=(s.fee_paid||0)).length;
   const male = state.students.filter(s=>s.gender==='male').length;
   const female = state.students.filter(s=>s.gender==='female').length;
-  return { totalStudents, totalDue, totalCollected, totalAccountants, totalOut, fullyPaid, male, female, present: totalStudents-totalOut };
+  return { totalStudents, totalDue, totalCollected, totalDiscounts, totalAccountants, totalOut, fullyPaid, male, female, present: totalStudents-totalOut };
 }
 function sortStudentsList(list){
   const arr = [...list];
@@ -556,7 +565,8 @@ function leaveForStudent(studentId){
 }
 function leaveBadgeClass(status){ return status==='out'?'out':status==='completed'?'completed':status==='cancelled'?'cancelled':'approved'; }
 function activityLabel(t){
-  const map={ scan:'Scan', payment:'Payment', student_add:'Student added', student_edit:'Student edited',
+  const map={ scan:'Scan', payment:'Payment', payment_edit:'Transaction edited', payment_archive:'Transaction binned', payment_restore:'Transaction restored',
+    discount:'Discount applied', student_add:'Student added', student_edit:'Student edited',
     student_archive:'Moved to recycle bin', student_restore:'Restored', student_purge:'Permanently deleted',
     leave_granted:'Leave granted', leave_out:'Marked out', leave_in:'Marked in' };
   return map[t]||t;
@@ -775,9 +785,15 @@ async function loadMyProfile(){
 }
 function logout(){ stopCamera(); if (approvalPollInterval){ clearInterval(approvalPollInterval); approvalPollInterval=null; } clearSession(); state.user=null; state.view='login'; state.scanResult=null; state.gateResult=null; state.scanning=false; update(); }
 async function loadAllForRole(){
-  if (state.user.role==='admin') await Promise.all([loadStudents(), loadProfiles(), loadActivity(), loadLeaves(), loadBatches(), loadLoginRequests()]);
-  else if (state.user.role==='accountant') await Promise.all([loadStudents(), loadActivity(), loadLeaves(), loadBatches()]);
+  if (state.user.role==='admin') await Promise.all([loadStudents(), loadProfiles(), loadActivity(), loadLeaves(), loadBatches(), loadLoginRequests(), loadTotalDiscounts()]);
+  else if (state.user.role==='accountant') await Promise.all([loadStudents(), loadActivity(), loadLeaves(), loadBatches(), loadTotalDiscounts()]);
   else await loadActivity();
+}
+async function loadTotalDiscounts(){
+  try{
+    const rows = await sbSelect('payments', '?payment_method=eq.discount&archived=eq.false&select=amount');
+    state._totalDiscounts = (rows||[]).reduce((sum,p)=>sum+(Number(p.amount)||0),0);
+  }catch(e){ state._totalDiscounts = 0; }
 }
 
 /* ============================================================
@@ -919,9 +935,12 @@ function renderDashboardTab(){
   <div class="stat-grid">
     <div class="stat-card"><div class="stat-num">${stats.male}</div><div class="stat-label">♂ Male students</div></div>
     <div class="stat-card"><div class="stat-num">${stats.female}</div><div class="stat-label">♀ Female students</div></div>
-    <div class="stat-card"><div class="stat-num">${fmtMoney(stats.totalCollected)}</div><div class="stat-label">💰 Fees collected</div></div>
+    <div class="stat-card"><div class="stat-num">${fmtMoney(stats.totalCollected)}</div><div class="stat-label">💰 Fees collected (cash/online)</div></div>
     <div class="stat-card stat-due"><div class="stat-num">${fmtMoney(stats.totalDue)}</div><div class="stat-label">⚠ Fees outstanding</div></div>
   </div>
+  ${stats.totalDiscounts>0? `<div class="stat-grid">
+    <div class="stat-card" style="grid-column:1/-1;"><div class="stat-num">${fmtMoney(stats.totalDiscounts)}</div><div class="stat-label">🎁 Total discounts given (not real cash received)</div></div>
+  </div>` : ''}
   <div class="card" style="margin-bottom:18px;">
     <h3>Students with dues (${dues.length})</h3>
     ${dues.length? `<table class="table"><tbody>${dues.slice(0,15).map(s=>`<tr style="cursor:pointer;" onclick="openStudentProfile('${escAttr(s.roll_no)}')"><td data-label="Student">${esc(s.name)} <span class="mono muted">${esc(s.roll_no)}</span></td><td data-label="Due" class="text-due">${fmtMoney((s.fee_total||0)-(s.fee_paid||0))}</td></tr>`).join('')}</tbody></table>${dues.length>15?`<p class="muted">+ ${dues.length-15} more — see the Students tab.</p>`:''}` : `<p class="empty-hint">No outstanding dues.</p>`}
@@ -1232,6 +1251,8 @@ function studentFormModalHTML(existing, contacts){
         <label>Village / Town<input id="f-addr-village" value="${esc(s.addr_village_town||'')}" placeholder="Village or town name" /></label>
         <label>Post Office (P.O)<input id="f-addr-po" value="${esc(s.addr_po||'')}" placeholder="Post office name" /></label>
         <label>Police Station (P.S)<input id="f-addr-ps" value="${esc(s.addr_ps||'')}" placeholder="Police station / thana" /></label>
+        <label>District<input id="f-addr-district" value="${esc(s.addr_district||'')}" placeholder="District name" /></label>
+        <label>State<input id="f-addr-state" value="${esc(s.addr_state||'')}" placeholder="State name" /></label>
         <label>PIN code<input id="f-addr-pin" value="${esc(s.addr_pin||'')}" placeholder="6-digit PIN" maxlength="6" /></label>
       </div>
       <hr class="section-divider" />
@@ -1262,7 +1283,7 @@ function studentFormModalHTML(existing, contacts){
         <label>Bank<input id="f-paybank" /></label>
       </div>`}
       <div class="modal-actions">
-        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-ghost" onclick="closeModal()">${existing?'Cancel':'Done adding students'}</button>
         <button class="btn btn-primary" id="student-save-btn" onclick="submitStudentForm()">${existing?'Save changes':'Add student'}</button>
       </div>
     </div>
@@ -1281,6 +1302,8 @@ async function submitStudentForm(){
   const addrVillage = (document.getElementById('f-addr-village')||{value:''}).value.trim();
   const addrPo = (document.getElementById('f-addr-po')||{value:''}).value.trim();
   const addrPs = (document.getElementById('f-addr-ps')||{value:''}).value.trim();
+  const addrDistrict = (document.getElementById('f-addr-district')||{value:''}).value.trim();
+  const addrState = (document.getElementById('f-addr-state')||{value:''}).value.trim();
   const addrPin = (document.getElementById('f-addr-pin')||{value:''}).value.trim();
   const feeMode = document.getElementById('f-feemode').value;
   const feeTotal = Math.max(0, parseFloat(document.getElementById('f-feetotal').value) || 0);
@@ -1297,7 +1320,7 @@ async function submitStudentForm(){
     if (onlinePaid>0 && (!initUid || !initBank)){ toast('Enter the transaction UID and bank for the online portion.','error'); return; }
   }
   const payload = { name, room, gender, batch_id:batchId, father_name:father, mother_name:mother,
-    addr_village_town:addrVillage, addr_po:addrPo, addr_ps:addrPs, addr_pin:addrPin,
+    addr_village_town:addrVillage, addr_po:addrPo, addr_ps:addrPs, addr_district:addrDistrict, addr_state:addrState, addr_pin:addrPin,
     contacts, fee_mode:feeMode, fee_total:feeTotal };
   const args = { rollNo, name, payload, originalRollNo, photoFile, cashPaid, onlinePaid, initUid, initBank };
 
@@ -1334,18 +1357,24 @@ async function actuallySubmitStudent({ rollNo, name, payload, originalRollNo, ph
         catch(payErr){ toast('Student added, but the initial payment could not be recorded: '+payErr.message, 'error'); }
       }
       await sbInsert('activity_log', { type:'student_add', roll_no: rollNo, details:`${name} (${rollNo})`, by_name: state.user.name });
-      toast('Student added.','success');
+      await Promise.all([loadStudents(), loadActivity()]);
+      // Continuous add mode: reset to a fresh blank form instead of closing,
+      // so many students can be added in a row without reopening the modal each time.
+      state.modal = { type:'studentForm', existing:null, originalRollNo:null, contacts:[{label:'Student',phone:''},{label:'Guardian',phone:''}] };
+      update();
+      toast(`${name} added — ready for the next student.`,'success');
+      const rollInput = document.getElementById('f-rollno'); if (rollInput) rollInput.focus();
     } else {
       const row = state.students.find(s=>s.roll_no.toLowerCase()===originalRollNo.toLowerCase());
       const patch = Object.assign({}, payload);
       if (photoFile){ patch.photo_path = await uploadStudentPhoto(row.id, photoFile); }
       await sbUpdate('students', `?id=eq.${row.id}`, patch);
       await sbInsert('activity_log', { type:'student_edit', roll_no: rollNo, details:`${name} (${rollNo})`, by_name: state.user.name });
+      closeModal();
+      await Promise.all([loadStudents(), loadActivity()]);
+      update();
       toast('Student updated.','success');
     }
-    closeModal();
-    await Promise.all([loadStudents(), loadActivity()]);
-    update();
   }catch(e){ toast(e.message,'error'); if (btn){ btn.disabled=false; btn.textContent = originalRollNo?'Save changes':'Add student'; } }
 }
 async function uploadStudentPhoto(studentId, file){
@@ -1454,18 +1483,20 @@ function profileModalHTML(s, payments, leaveHistory, attendanceHistory){
         <div><span class="muted">Mother's name</span><div>${esc(s.mother_name||'—')}</div></div>
         ${s.address&&!s.addr_village_town?`<div style="grid-column:1/-1;"><span class="muted">Address (legacy)</span><div>${esc(s.address)}</div></div>`:''}
       </div>
-      ${(s.addr_village_town||s.addr_po||s.addr_ps||s.addr_pin) ? `
+      ${(s.addr_village_town||s.addr_po||s.addr_ps||s.addr_district||s.addr_state||s.addr_pin) ? `
       <div class="profile-section-title">Address</div>
       <div class="profile-grid">
         ${s.addr_village_town?`<div><span class="muted">Village / Town</span><div>${esc(s.addr_village_town)}</div></div>`:''}
         ${s.addr_po?`<div><span class="muted">P.O</span><div>${esc(s.addr_po)}</div></div>`:''}
         ${s.addr_ps?`<div><span class="muted">P.S</span><div>${esc(s.addr_ps)}</div></div>`:''}
+        ${s.addr_district?`<div><span class="muted">District</span><div>${esc(s.addr_district)}</div></div>`:''}
+        ${s.addr_state?`<div><span class="muted">State</span><div>${esc(s.addr_state)}</div></div>`:''}
         ${s.addr_pin?`<div><span class="muted">PIN</span><div>${esc(s.addr_pin)}</div></div>`:''}
       </div>` : ''}
       <div class="profile-section-title">Contacts</div>
       <div class="contacts-list">
-        ${contacts.length? contacts.map((c,i)=>`<div class="contact-list-row">
-          <span class="contact-list-label">${i===0?'📱 Student':i===1?'👤 Guardian':esc(c.label||'Contact')}</span>
+        ${contacts.length? contacts.map((c)=>`<div class="contact-list-row">
+          <span class="contact-list-label">${contactIconLabel(c.label)}</span>
           <a href="tel:${esc(c.phone)}" class="contact-list-phone">${esc(c.phone)}</a>
         </div>`).join('') : '<span class="muted">No contacts on file.</span>'}
       </div>
@@ -1474,10 +1505,10 @@ function profileModalHTML(s, payments, leaveHistory, attendanceHistory){
         <div><span class="muted">Mode</span><div>${s.fee_mode==='monthly'?'Monthly':'One-time'}</div></div>
         <div><span class="muted">Amount</span><div>${fmtMoney(s.fee_total)}</div></div>
         <div><span class="muted">Paid</span><div class="text-paid">${fmtMoney(s.fee_paid)}</div></div>
-        <div><span class="muted">Balance</span><div>${due>0?`<span class="text-due">${fmtMoney(due)} due</span>`:`<span class="fee-cleared-badge">⭐ Fee Cleared</span>`}${s.fee_paid>s.fee_total?`<br><span class="credit-badge">Credit: ${fmtMoney(s.fee_paid-s.fee_total)}</span>`:''}</div></div>
+        <div><span class="muted">Balance</span><div>${due>0?`<span class="text-due">${fmtMoney(due)} due</span>${canRecordPayment?` <button class="btn btn-secondary btn-sm" style="margin-left:8px;" onclick="confirmMarkFullPaid('${escAttr(s.roll_no)}','${escAttr(s.name)}',${due})">Mark full paid</button>`:''}`:`<span class="fee-cleared-badge">⭐ Fee Cleared</span>`}${s.fee_paid>s.fee_total?`<br><span class="credit-badge">Credit: ${fmtMoney(s.fee_paid-s.fee_total)}</span>`:''}</div></div>
       </div>
       ${canRecordPayment ? recordPaymentFormHTML(s.roll_no) : ''}
-      ${payments && payments.length ? `<table class="table"><tbody>${payments.map(p=>`<tr><td>${fmtTime(p.created_at)}</td><td>${fmtMoney(p.amount)}</td><td class="muted">${esc(p.payment_method||'cash')}${p.payment_method==='online'&&p.bank_name?' · '+esc(p.bank_name):''}${p.payment_method==='online'&&p.transaction_uid?' · '+esc(p.transaction_uid):''}</td><td class="muted">${esc(p.recorded_by_name||'')}</td><td class="muted">${esc(p.note||'')}</td>${isAdmin?`<td class="row-actions"><button class="icon-btn" onclick="openEditPaymentModal('${escAttr(p.id)}','profile')">Edit</button><button class="icon-btn icon-danger" onclick="archivePaymentAction('${escAttr(p.id)}','profile')">Bin</button></td>`:''}</tr>`).join('')}</tbody></table>` : '<p class="muted">No payments recorded yet.</p>'}
+      ${payments && payments.length ? `<table class="table"><tbody>${payments.map(p=>`<tr><td>${fmtTime(p.created_at)}</td><td>${fmtMoney(p.amount)}</td><td class="muted">${p.payment_method==='discount'?'<span class="badge badge-discount">discount</span>':esc(p.payment_method||'cash')}${p.payment_method==='online'&&p.bank_name?' · '+esc(p.bank_name):''}${p.payment_method==='online'&&p.transaction_uid?' · '+esc(p.transaction_uid):''}</td><td class="muted">${esc(p.recorded_by_name||'')}</td><td class="muted">${esc(p.note||'')}</td>${isAdmin&&p.payment_method!=='discount'?`<td class="row-actions"><button class="icon-btn" onclick="openEditPaymentModal('${escAttr(p.id)}','profile')">Edit</button><button class="icon-btn icon-danger" onclick="archivePaymentAction('${escAttr(p.id)}','profile')">Bin</button></td>`:isAdmin?'<td></td>':''}</tr>`).join('')}</tbody></table>` : '<p class="muted">No payments recorded yet.</p>'}
 
       <div class="profile-section-title">Leave history (${leavesTaken} completed)</div>
       ${leaveHistory && leaveHistory.length ? `<table class="table"><tbody>${leaveHistory.map(l=>`<tr><td data-label="Status"><span class="badge badge-${leaveBadgeClass(l.status)}">${esc(l.status)}</span></td><td data-label="Token" class="mono muted">${esc(l.token||'—')}</td><td data-label="Reason" class="muted">${esc(l.reason||'')}</td><td data-label="Granted by" class="muted">${esc(l.granted_by_name||'')}</td><td data-label="Out / In" class="muted">${leaveTimesHTML(l)}</td></tr>`).join('')}</tbody></table>` : '<p class="muted">No leave records.</p>'}
@@ -1616,6 +1647,8 @@ const CSV_COLUMN_ALIASES = {
   villagetown: ['villagetown','village','town','villagetownname'],
   po: ['po','postoffice'],
   ps: ['ps','policestation','thana'],
+  district: ['district'],
+  state: ['state'],
   pin: ['pin','pincode','postalcode','zip'],
   address: ['address'],
   contacts: ['contacts','contact','phone','phonenumber','phonenumbers'],
@@ -1626,7 +1659,7 @@ const CSV_COLUMN_ALIASES = {
   onlineuid: ['onlineuid','uid','utr','transactionid'],
   onlinebank: ['onlinebank','bank']
 };
-const CSV_DEFAULT_ORDER = ['rollno','name','room','gender','batch','fathername','mothername','villagetown','po','ps','pin','contacts','feemode','feetotal','cashpaid','onlinepaid','onlineuid','onlinebank'];
+const CSV_DEFAULT_ORDER = ['rollno','name','room','gender','batch','fathername','mothername','villagetown','po','ps','district','state','pin','contacts','feemode','feetotal','cashpaid','onlinepaid','onlineuid','onlinebank'];
 function normalizeHeaderToken(s){ return String(s||'').trim().toLowerCase().replace(/[^a-z]/g,''); }
 async function parseAndImportCSV(){
   const raw = document.getElementById('csv-textarea').value;
@@ -1677,7 +1710,7 @@ async function parseAndImportCSV(){
       batch_id: batch?batch.id:null,
       father_name:getVal(parts,'fathername'), mother_name:getVal(parts,'mothername'),
       addr_village_town:getVal(parts,'villagetown'), addr_po:getVal(parts,'po'),
-      addr_ps:getVal(parts,'ps'), addr_pin:getVal(parts,'pin'),
+      addr_ps:getVal(parts,'ps'), addr_district:getVal(parts,'district'), addr_state:getVal(parts,'state'), addr_pin:getVal(parts,'pin'),
       contacts: parseContactsField(getVal(parts,'contacts')),
       fee_mode: (getVal(parts,'feemode').toLowerCase()==='monthly'?'monthly':'onetime'),
       fee_total:parseFloat(getVal(parts,'feetotal'))||0, fee_paid:0 });
@@ -1991,11 +2024,11 @@ function renderTransactionsTab(){
     <tbody>${filtered.length? filtered.map(p=>{ const stu=p.students||{}; return `<tr style="cursor:pointer;" onclick="openTransactionDetail('${escAttr(p.id)}','all',${isRecycle})">
       <td data-label="Student">${esc(stu.name||'')} <span class="muted mono">${esc(stu.roll_no||'')}</span></td>
       <td data-label="Amount">${fmtMoney(p.amount)}</td>
-      <td data-label="Method"><span class="badge badge-payment">${esc(p.payment_method||'cash')}</span></td>
+      <td data-label="Method"><span class="badge badge-${p.payment_method==='discount'?'discount':'payment'}">${esc(p.payment_method||'cash')}</span></td>
       <td data-label="Details" class="muted">${p.payment_method==='online'? esc((p.bank_name||'')+(p.transaction_uid?' · '+p.transaction_uid:'')) : esc(p.note||'')}</td>
       <td data-label="By" class="muted">${esc(p.recorded_by_name||'')}</td>
       <td data-label="When" class="muted">${fmtTime(p.created_at)}</td>
-      <td data-label="" class="row-actions" onclick="event.stopPropagation()">${isRecycle? `<button class="icon-btn" onclick="restorePaymentAction('${escAttr(p.id)}','all')">Restore</button>` : `<button class="icon-btn" onclick="openEditPaymentModal('${escAttr(p.id)}','all')">Edit</button><button class="icon-btn icon-danger" onclick="archivePaymentAction('${escAttr(p.id)}','all')">Bin</button>`}</td>
+      <td data-label="" class="row-actions" onclick="event.stopPropagation()">${p.payment_method==='discount' ? '' : isRecycle? `<button class="icon-btn" onclick="restorePaymentAction('${escAttr(p.id)}','all')">Restore</button>` : `<button class="icon-btn" onclick="openEditPaymentModal('${escAttr(p.id)}','all')">Edit</button><button class="icon-btn icon-danger" onclick="archivePaymentAction('${escAttr(p.id)}','all')">Bin</button>`}</td>
     </tr>`; }).join('') : `<tr><td colspan="7" class="empty-hint">No transactions in this range.</td></tr>`}</tbody></table></div>`;
 }
 function openTransactionDetail(paymentId, source, isRecycle){
@@ -2003,13 +2036,15 @@ function openTransactionDetail(paymentId, source, isRecycle){
   const p = list.find(x=>x.id===paymentId);
   if (!p) return;
   const stu = p.students || {};
-  const actions = isRecycle
+  const isDiscount = p.payment_method==='discount';
+  const actions = isDiscount ? ''
+    : isRecycle
     ? `<div class="modal-actions" style="justify-content:flex-start;"><button class="btn btn-secondary" onclick="closeModal(); restorePaymentAction('${escAttr(p.id)}','${source}')">Restore</button></div>`
     : `<div class="modal-actions" style="justify-content:flex-start;"><button class="btn btn-secondary" onclick="closeModal(); openEditPaymentModal('${escAttr(p.id)}','${source}')">Edit</button><button class="btn btn-danger" onclick="closeModal(); archivePaymentAction('${escAttr(p.id)}','${source}')">Move to recycle bin</button></div>`;
   openRowDetail(`${esc(stu.name||'')} — Transaction`, [
     { label:'Roll number', value:`<span class="mono">${esc(stu.roll_no||'')}</span>` },
     { label:'Amount', value: fmtMoney(p.amount) },
-    { label:'Method', value: `<span class="badge badge-payment">${esc(p.payment_method||'cash')}</span>` },
+    { label:'Method', value: `<span class="badge badge-${isDiscount?'discount':'payment'}">${esc(p.payment_method||'cash')}</span>` },
     { label:'Online details', value: p.payment_method==='online' ? esc((p.bank_name||'')+(p.transaction_uid?' · UID '+p.transaction_uid:'')) : '—' },
     { label:'Note', value: esc(p.note||'—') },
     { label:'Recorded by', value: esc(p.recorded_by_name||'—') },
@@ -2323,6 +2358,20 @@ async function actuallyRecordPayment(rollNo, amount, method, uid, bank, note){
     openStudentProfile(rollNo);
   }catch(e){ toast(e.message,'error'); if (btn){ btn.disabled=false; btn.textContent='Record payment'; } }
 }
+function confirmMarkFullPaid(rollNo, name, due){
+  confirmAction(`Mark ${name} as fully paid? Their remaining due of ${fmtMoney(due)} will be recorded as a discount, not as cash or online payment received. This cannot be easily undone.`, ()=> actuallyMarkFullPaid(rollNo));
+}
+async function actuallyMarkFullPaid(rollNo){
+  try{
+    await sbRpc('mark_full_paid', { p_roll_no: rollNo });
+    buzz([50,40,50,40,80]);
+    toast('Marked fully paid — remaining due converted to discount. 🎉','success');
+    state._myPayments=null; state._allPayments=null;
+    await loadStudents();
+    await loadActivity();
+    openStudentProfile(rollNo);
+  }catch(e){ toast(e.message,'error'); }
+}
 
 /* ============================================================
    GATEKEEPER SHELL — photo + name + permission status ONLY
@@ -2454,7 +2503,7 @@ async function init(){
       await getValidAccessToken();
       await loadMyProfile();
       if (state.user.role !== 'admin'){
-        // re-check whether our most recent login request (if any) is still pending/approved
+        // re-check whether our most recent login request (if any) is still pending/apsuproved
         try{
           const rows = await sbSelect('login_requests', `?user_id=eq.${state.user.id}&select=*&order=requested_at.desc&limit=1`);
           const latest = rows && rows[0];
