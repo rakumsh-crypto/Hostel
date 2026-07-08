@@ -49,6 +49,8 @@
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;}
 body{font-family:var(--font-body); color:var(--ink); background:var(--bg); min-height:100vh;}
+#app[data-font-size="large"]{zoom:1.15;}
+#app[data-font-size="small"]{zoom:0.9;}
 button,input,select,textarea{font-family:inherit; font-size:14px;}
 h1,h2,h3,h4{font-family:var(--font-display); font-weight:700; margin:0 0 .4em 0; color:var(--ink);}
 .mono{font-family:var(--font-mono);}
@@ -364,7 +366,7 @@ let state = {
   myTxnDateFrom:null, myTxnDateTo:null,
   loginRequests:[], myLoginRequestId:null,
   attDate:null, attListView:false, attListSearch:'',
-  theme:'light'
+  theme:'light', fontSize:'normal'
 };
 let session = null;
 let html5QrCode = null;
@@ -487,6 +489,22 @@ function toggleTheme(){
   storageSet('theme', state.theme, false);
   update();
 }
+const FONT_SIZE_CYCLE = ['normal','large','small'];
+async function loadFontSize(){
+  try{ const f = await storageGet('font-size', false); if (FONT_SIZE_CYCLE.includes(f)) state.fontSize=f; }catch(e){}
+}
+function applyFontSizeAttr(){
+  const app = document.getElementById('app');
+  if (app) app.setAttribute('data-font-size', state.fontSize||'normal');
+}
+function cycleFontSize(){
+  const idx = FONT_SIZE_CYCLE.indexOf(state.fontSize||'normal');
+  state.fontSize = FONT_SIZE_CYCLE[(idx+1) % FONT_SIZE_CYCLE.length];
+  applyFontSizeAttr();
+  storageSet('font-size', state.fontSize, false);
+  update();
+}
+function fontSizeIcon(){ return state.fontSize==='large' ? 'A+' : state.fontSize==='small' ? 'A-' : 'A'; }
 
 /* ============================================================
    HELPERS
@@ -848,6 +866,7 @@ function renderTopbar(){
     <div class="topbar-user">
       <span class="role-badge role-${state.user.role}">${esc(state.user.role)}</span>
       <span class="user-name">${esc(state.user.name)}</span>
+      <button class="account-icon-btn" title="Text size (${esc(state.fontSize||'normal')})" onclick="cycleFontSize()">${fontSizeIcon()}</button>
       <button class="account-icon-btn" title="Toggle dark mode" onclick="toggleTheme()">${state.theme==='dark'?'☀':'🌙'}</button>
       <button class="account-icon-btn" title="Account settings" onclick="openChangePassword()">⚙</button>
       <button class="link-btn" onclick="logout()">Log out</button>
@@ -981,11 +1000,12 @@ function renderStudentCard(s){
     <div class="sc-actions" onclick="event.stopPropagation()">
       ${isAdmin? `<button class="icon-btn" onclick="openStudentForm('${escAttr(s.roll_no)}')">Edit</button>` : ''}
       ${canGrant && !leave? `<button class="icon-btn" onclick="openGrantLeaveModal('${escAttr(s.roll_no)}')">Grant leave</button>` : ''}
+      ${canGrant && leave && leave.status==='approved'? `<button class="icon-btn icon-danger" onclick="revokeLeave('${escAttr(s.roll_no)}','${escAttr(s.name)}')">Revoke leave</button>` : ''}
       ${isAdmin? `<button class="icon-btn icon-danger" onclick="openArchiveModal('${escAttr(s.roll_no)}')">Archive</button>` : ''}
     </div>` : state.studentsView==='recycle' ? `
     <div class="sc-actions" onclick="event.stopPropagation()">
       <button class="icon-btn" onclick="restoreStudent('${escAttr(s.roll_no)}')">Restore</button>
-      <button class="icon-btn icon-danger" onclick="purgeStudent('${escAttr(s.roll_no)}')">Delete forever</button>
+      ${isAdmin? `<button class="icon-btn icon-danger" onclick="purgeStudent('${escAttr(s.roll_no)}')">Delete forever</button>` : ''}
     </div>` : ''}
   </div>`;
 }
@@ -1012,7 +1032,7 @@ function renderStudentsTab(){
         <button class="${!state.studentGroupView?'active':''}" onclick="setStudentGroupView(false)">Flat list</button>
         <button class="${state.studentGroupView?'active':''}" onclick="setStudentGroupView(true)">By gender &amp; room</button>
       </div>
-      ${isAdmin? `<div class="segmented">
+      ${(isAdmin||canDo('view_recycle_bin'))? `<div class="segmented">
         <button class="${state.studentsView==='active'?'active':''}" onclick="setStudentsView('active')">Active</button>
         <button class="${state.studentsView==='recycle'?'active':''}" onclick="setStudentsView('recycle')">Recycle bin</button>
       </div>` : ''}
@@ -1325,14 +1345,15 @@ async function submitStudentForm(){
     contacts, fee_mode:feeMode, fee_total:feeTotal };
   const args = { rollNo, name, payload, originalRollNo, photoFile, cashPaid, onlinePaid, initUid, initBank };
 
-  // Hard block: roll number already belongs to someone else — check the database directly
-  // (not just state.students, which only reflects whichever view — active or recycle bin — is currently loaded)
+  // Hard block: roll number already belongs to someone else — checked via RPC so this
+  // works correctly even for accountants without recycle-bin viewing permission (a direct
+  // table query would silently miss archived duplicates for them, per the RLS split).
   if (!originalRollNo){
     try{
-      const existing = await sbSelect('students', `?roll_no=ilike.${encodeURIComponent(rollNo)}&select=roll_no,archived,name`);
-      if (existing && existing.length){
-        const ex = existing[0];
-        toast(ex.archived ? `Roll number "${rollNo}" belongs to an archived student (${ex.name}) — restore them from the recycle bin, or use a different roll number.` : `Roll number "${rollNo}" is already in use by an existing student.`, 'error');
+      const rows = await sbRpc('check_roll_no_available', { p_roll_no: rollNo });
+      const result = rows && rows[0];
+      if (result && result.is_taken){
+        toast(result.is_archived ? `Roll number "${rollNo}" belongs to an archived student (${result.student_name}) — restore them from the recycle bin, or use a different roll number.` : `Roll number "${rollNo}" is already in use by an existing student.`, 'error');
         return;
       }
     }catch(e){ /* if the check itself fails, fall through — the insert will still safely reject a true duplicate */ }
@@ -1423,9 +1444,7 @@ async function submitArchive(rollNo){
 function restoreStudent(rollNo){
   confirmAction(`Restore ${rollNo} from the recycle bin?`, async ()=>{
     try{
-      const row = state.students.find(s=>s.roll_no.toLowerCase()===rollNo.toLowerCase());
-      await sbUpdate('students', `?id=eq.${row.id}`, { archived:false, archived_reason:null, archived_at:null, archived_by:null });
-      await sbInsert('activity_log', { type:'student_restore', roll_no: rollNo, details:`Restored ${rollNo}`, by_name: state.user.name });
+      await sbRpc('restore_student', { p_roll_no: rollNo });
       toast('Student restored.','success');
       await Promise.all([loadStudents(), loadActivity()]);
     }catch(e){ toast(e.message,'error'); }
@@ -1530,6 +1549,7 @@ function profileModalHTML(s, payments, leaveHistory, attendanceHistory){
       <div class="profile-actions">
         ${isAdmin? `<button class="btn btn-secondary" onclick="openStudentForm('${escAttr(s.roll_no)}')">Edit details</button>` : ''}
         ${canGrantLeave && !currentLeave? `<button class="btn btn-secondary" onclick="openGrantLeaveModal('${escAttr(s.roll_no)}')">Grant leave</button>` : ''}
+        ${canGrantLeave && currentLeave && currentLeave.status==='approved'? `<button class="btn btn-danger" onclick="revokeLeave('${escAttr(s.roll_no)}','${escAttr(s.name)}')">Revoke leave</button>` : ''}
         ${isAdmin? `<button class="btn btn-danger" onclick="closeModal(); openArchiveModal('${escAttr(s.roll_no)}')">Move to recycle bin</button>` : ''}
         <button class="btn btn-ghost" onclick="closeModal()">Close</button>
       </div>
@@ -1763,8 +1783,8 @@ function renderLeavesTab(){
   <div class="card" style="margin-bottom:18px;"><h3>Currently out (${outNow.length})</h3>
     ${outNow.length? `<table class="table"><tbody>${outNow.map(renderLeaveRow).join('')}</tbody></table>` : `<p class="empty-hint">No one is currently out.</p>`}
   </div>
-  <div class="card no-pad"><table class="table"><thead><tr><th>Student</th><th>Status</th><th>Token</th><th>Reason</th><th>Granted by</th><th>Times</th></tr></thead>
-    <tbody>${history.length? history.map(renderLeaveRow).join('') : `<tr><td colspan="6" class="empty-hint">No leave history in this range.</td></tr>`}</tbody></table></div>`;
+  <div class="card no-pad"><table class="table"><thead><tr><th>Student</th><th>Status</th><th>Token</th><th>Reason</th><th>Granted by</th><th>Times</th><th></th></tr></thead>
+    <tbody>${history.length? history.map(renderLeaveRow).join('') : `<tr><td colspan="7" class="empty-hint">No leave history in this range.</td></tr>`}</tbody></table></div>`;
 }
 function leaveTimesHTML(l){
   const parts = [];
@@ -1774,6 +1794,7 @@ function leaveTimesHTML(l){
 }
 function renderLeaveRow(l){
   const stu = l.students || {};
+  const canRevoke = l.status==='approved' && canDo('grant_leave');
   return `<tr style="cursor:pointer;" onclick="openLeaveDetail('${escAttr(l.id)}')">
     <td data-label="Student">${esc(stu.name||'')} <span class="muted mono">${esc(stu.roll_no||'')}</span></td>
     <td data-label="Status"><span class="badge badge-${leaveBadgeClass(l.status)}">${esc(l.status)}</span></td>
@@ -1781,6 +1802,7 @@ function renderLeaveRow(l){
     <td data-label="Reason" class="muted">${esc(l.reason||'—')}</td>
     <td data-label="Granted by" class="muted">${esc(l.granted_by_name||'')}</td>
     <td data-label="Out / In" class="muted">${leaveTimesHTML(l)}</td>
+    <td data-label="" class="row-actions" onclick="event.stopPropagation()">${canRevoke?`<button class="icon-btn icon-danger" onclick="revokeLeave('${escAttr(stu.roll_no)}','${escAttr(stu.name)}')">Revoke</button>`:''}</td>
   </tr>`;
 }
 function openLeaveDetail(id){
@@ -1832,6 +1854,18 @@ async function submitGrantLeave(){
     await Promise.all([loadLeaves(), loadActivity()]);
   }catch(e){ toast(e.message,'error'); if (btn){ btn.disabled=false; btn.textContent='Grant leave'; } }
   update();
+}
+function revokeLeave(rollNo, name){
+  confirmAction(`Revoke the leave granted to ${name}? This only works before they've been marked out at the gate — if they're already out, use "Mark IN" instead.`, async ()=>{
+    try{
+      await sbRpc('revoke_leave', { p_roll_no: rollNo });
+      toast('Leave revoked.','success');
+      state._roster=null;
+      await Promise.all([loadLeaves(), loadActivity()]);
+      if (state.modal && state.modal.type==='profile' && state.modal.student.roll_no===rollNo) openStudentProfile(rollNo);
+    }catch(e){ toast(e.message,'error'); }
+    update();
+  });
 }
 
 /* ============================================================
@@ -2154,6 +2188,8 @@ function renderAccountRow(a){
       <label><input type="checkbox" ${perms.grant_leave?'checked':''} onchange="updatePermission('${escAttr(a.id)}','grant_leave',this.checked)" /> Grant leave</label>
       <label><input type="checkbox" ${perms.record_payment?'checked':''} onchange="updatePermission('${escAttr(a.id)}','record_payment',this.checked)" /> Record payment</label>
       <label><input type="checkbox" ${perms.take_attendance?'checked':''} onchange="updatePermission('${escAttr(a.id)}','take_attendance',this.checked)" /> Take attendance</label>
+      <label><input type="checkbox" ${perms.view_all_transactions?'checked':''} onchange="updatePermission('${escAttr(a.id)}','view_all_transactions',this.checked)" /> View all of a student's transactions</label>
+      <label><input type="checkbox" ${perms.view_recycle_bin?'checked':''} onchange="updatePermission('${escAttr(a.id)}','view_recycle_bin',this.checked)" /> View recycle bin</label>
     </div>` : '<span class="muted">—</span>'}</td>
     <td data-label="Status">${a.active!==false? '<span class="text-paid">Active</span>' : '<span class="text-due">Disabled</span>'}</td>
     <td data-label="" class="row-actions">${!isSelf? `<button class="icon-btn ${a.active!==false?'icon-danger':''}" onclick="toggleAccountActive('${escAttr(a.id)}', ${a.active!==false})">${a.active!==false?'Disable':'Enable'}</button>` : '<span class="muted">You</span>'}</td>
@@ -2360,18 +2396,35 @@ async function actuallyRecordPayment(rollNo, amount, method, uid, bank, note){
   }catch(e){ toast(e.message,'error'); if (btn){ btn.disabled=false; btn.textContent='Record payment'; } }
 }
 function confirmMarkFullPaid(rollNo, name, due){
-  confirmAction(`Mark ${name} as fully paid? Their remaining due of ${fmtMoney(due)} will be recorded as a discount, not as cash or online payment received. This cannot be easily undone.`, ()=> actuallyMarkFullPaid(rollNo));
+  state.modal = { type:'markFullPaid', rollNo, name, due };
+  update();
 }
-async function actuallyMarkFullPaid(rollNo){
+function markFullPaidModalHTML(m){
+  return `<div class="modal-overlay" onclick="if(event.target===this) closeModal()"><div class="modal">
+    <h3>Mark fully paid</h3>
+    <p class="muted">${esc(m.name)}'s remaining due of <b>${fmtMoney(m.due)}</b> will be recorded as a discount, not as cash or online payment received. This cannot be easily undone.</p>
+    <div class="form-grid">
+      <label>Reason (required)<textarea id="fullpaid-reason" rows="2" placeholder="e.g. Scholarship, hardship waiver, staff family discount…"></textarea></label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="fullpaid-btn" onclick="submitMarkFullPaid('${escAttr(m.rollNo)}')">Mark fully paid</button>
+    </div>
+  </div></div>`;
+}
+async function submitMarkFullPaid(rollNo){
+  const reason = document.getElementById('fullpaid-reason').value.trim();
+  if (!reason){ toast('A reason is required.','error'); return; }
+  const btn = document.getElementById('fullpaid-btn'); if (btn){ btn.disabled=true; btn.textContent='Saving…'; }
   try{
-    await sbRpc('mark_full_paid', { p_roll_no: rollNo });
+    await sbRpc('mark_full_paid', { p_roll_no: rollNo, p_reason: reason });
     buzz([50,40,50,40,80]);
     toast('Marked fully paid — remaining due converted to discount. 🎉','success');
     state._myPayments=null; state._allPayments=null;
     await loadStudents();
     await loadActivity();
     openStudentProfile(rollNo);
-  }catch(e){ toast(e.message,'error'); }
+  }catch(e){ toast(e.message,'error'); if (btn){ btn.disabled=false; btn.textContent='Mark fully paid'; } }
 }
 
 /* ============================================================
@@ -2484,6 +2537,7 @@ function renderModal(){
     case 'batchAssign': return batchAssignModalHTML(state.modal);
     case 'editPayment': return editPaymentModalHTML(state.modal.payment);
     case 'rowDetail': return rowDetailModalHTML(state.modal);
+    case 'markFullPaid': return markFullPaidModalHTML(state.modal);
     case 'changepw': return changePasswordModalHTML();
     case 'confirm': return `<div class="modal-overlay"><div class="modal modal-sm"><p>${esc(state.modal.message)}</p><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-danger" onclick="runConfirmedAction()">Confirm</button></div></div></div>`;
     default: return '';
@@ -2495,7 +2549,9 @@ function renderModal(){
    ============================================================ */
 async function init(){
   await loadTheme();
+  await loadFontSize();
   render();
+  applyFontSizeAttr();
   await loadConfig();
   if (!state.sbUrl || !state.sbAnonKey){ state.view='setup'; update(); return; }
   await loadPersistedSession();
