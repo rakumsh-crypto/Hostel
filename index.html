@@ -745,7 +745,7 @@ function renderLogin(){
 function reopenSetup(){ state.view='setup'; update(); }
 function renderWaitingApproval(){
   return `<div class="login-screen"><div class="login-card" style="text-align:center;">
-    <div class="brand brand-center"><div class="brand-mark">H</div><div class="brand-text">Vidya Gramr</div></div>
+    <div class="brand brand-center"><div class="brand-mark">V</div><div class="brand-text">Vidya Gramr</div></div>
     <h3>Waiting for approval</h3>
     <p class="muted">An admin needs to approve this login before you can continue. Keep this page open — it'll continue automatically once approved.</p>
     <button class="btn btn-ghost" onclick="cancelApprovalWait()">Cancel</button>
@@ -929,7 +929,7 @@ function renderAdminShell(){
   const pendingCount = state.loginRequests.filter(r=>r.status==='pending').length;
   return `<div class="app-shell">
     <nav class="sidebar">
-      <div class="brand"><div class="brand-mark">H</div><div class="brand-text">Vidya<br>Gram</div></div>
+      <div class="brand"><div class="brand-mark">V</div><div class="brand-text">Vidya<br>Gram</div></div>
       <button class="nav-item ${state.adminTab==='dashboard'?'active':''}" onclick="setAdminTab('dashboard')">Dashboard</button>
       <button class="nav-item ${state.adminTab==='students'?'active':''}" onclick="setAdminTab('students')">Students</button>
       <button class="nav-item ${state.adminTab==='leaves'?'active':''}" onclick="setAdminTab('leaves')">Leaves</button>
@@ -966,7 +966,7 @@ function setAdminTab(tab){
 function renderViewerShell(){
   return `<div class="app-shell">
     <nav class="sidebar">
-      <div class="brand"><div class="brand-mark">H</div><div class="brand-text">Vidya<br>Gram</div></div>
+      <div class="brand"><div class="brand-mark">V</div><div class="brand-text">Vidya<br>Gram</div></div>
       <button class="nav-item ${state.viewerTab==='dashboard'?'active':''}" onclick="setViewerTab('dashboard')">Dashboard</button>
       <button class="nav-item ${state.viewerTab==='students'?'active':''}" onclick="setViewerTab('students')">Students</button>
       <button class="nav-item ${state.viewerTab==='leaves'?'active':''}" onclick="setViewerTab('leaves')">Leaves</button>
