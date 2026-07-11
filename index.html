@@ -11,7 +11,7 @@
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="Vidya Gram" />
+<meta name="apple-mobile-web-app-title" content="विद्या ग्राम" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -200,6 +200,7 @@ a{color:var(--primary);}
 .badge-leave_revoked{background:var(--red-soft); color:var(--red);}
 .badge-role_change,.badge-permission_change,.badge-account_status_change{background:var(--primary-soft); color:var(--primary-dark);}
 .badge-payment_backfill{background:var(--green-soft); color:var(--green);}
+.badge-attendance{background:#E3ECF9; color:#3D6B9C;}
 .badge-approved{background:var(--amber-soft); color:var(--amber);}
 .badge-out{background:#FDECEA; color:var(--red);}
 .badge-completed{background:var(--green-soft); color:var(--green);}
@@ -346,11 +347,20 @@ a{color:var(--primary);}
 <div id="print-area"></div>
 
 <script>
-
+/* ============================================================
+   SUPABASE CONNECTION — fill these in once and re-upload the file.
+   When both are filled in, EVERY browser/device that opens this
+   file connects immediately — no setup screen, nothing to re-enter.
+   Find these in Supabase: Project Settings → API.
+   Leave both as '' to use the in-app setup screen instead
+   (which remembers the connection per-browser via localStorage).
+   ============================================================ */
 const HARDCODED_SUPABASE_URL = 'https://dthsknsixkyyrkvfvtzi.supabase.co';
 const HARDCODED_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0aHNrbnNpeGt5eXJrdmZ2dHppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNjUyMDcsImV4cCI6MjA5Nzg0MTIwN30.gPmmlpdlxVc-FI7FrcBmkEPCE-ASS6-2Y-9_Q3mPpYA';
 
-
+/* ============================================================
+   STATE
+   ============================================================ */
 let state = {
   view:'loading', sbUrl:null, sbAnonKey:null, user:null,
   students:[], accounts:[], activity:[], leaves:[], batches:[],
@@ -373,7 +383,10 @@ let attendancePending = new Set(); // codes currently mid-request, to avoid dupl
 let attendanceErrorCooldown = {}; // code -> timestamp, for retryable errors (not found, out of campus) so they don't spam every decode frame
 let attendanceSessionCount = 0; // live tally for this scanning burst, shown without a full re-render
 
-
+/* ============================================================
+   STORAGE LAYER (Claude artifact storage when previewing inside
+   Claude.ai, otherwise localStorage for normal hosting)
+   ============================================================ */
 const hasClaudeStorage = (typeof window.storage !== 'undefined' && window.storage !== null);
 async function storageGet(key, shared){
   if (hasClaudeStorage){ try{ const res = await window.storage.get(key, shared); return res ? res.value : null; }catch(e){ return null; } }
@@ -388,7 +401,9 @@ async function storageDelete(key, shared){
   try{ localStorage.removeItem(key); }catch(e){}
 }
 
-
+/* ============================================================
+   SUPABASE REST HELPERS
+   ============================================================ */
 async function sbSignIn(email, password){
   const res = await fetch(`${state.sbUrl}/auth/v1/token?grant_type=password`, { method:'POST', headers:{ apikey:state.sbAnonKey, 'Content-Type':'application/json' }, body: JSON.stringify({ email, password }) });
   const data = await res.json();
@@ -430,6 +445,7 @@ async function sbRequest(path, opts){
 function sbSelect(table, query){ return sbRequest(`/${table}${query||''}`); }
 function sbInsert(table, row){ return sbRequest(`/${table}`, { method:'POST', body: row, headers:{ Prefer:'return=representation' } }); }
 function sbUpdate(table, query, patch){ return sbRequest(`/${table}${query}`, { method:'PATCH', body: patch, headers:{ Prefer:'return=representation' } }); }
+function sbUpsert(table, row, onConflict){ return sbRequest(`/${table}?on_conflict=${onConflict}`, { method:'POST', body: row, headers:{ Prefer:'resolution=merge-duplicates,return=representation' } }); }
 function sbDelete(table, query){ return sbRequest(`/${table}${query}`, { method:'DELETE' }); }
 function sbRpc(fn, params){ return sbRequest(`/rpc/${fn}`, { method:'POST', body: params }); }
 async function sbUploadFile(bucket, path, file){
@@ -585,7 +601,7 @@ function activityLabel(t){
     student_archive:'Moved to recycle bin', student_restore:'Restored', student_purge:'Permanently deleted',
     leave_granted:'Leave granted', leave_out:'Marked out', leave_in:'Marked in', leave_revoked:'Leave revoked',
     role_change:'Role changed', permission_change:'Permission changed', account_status_change:'Account status changed',
-    payment_backfill:'Historical payment logged' };
+    payment_backfill:'Historical payment logged', attendance:'Attendance marked' };
   return map[t]||t;
 }
 function capitalizeTab(t){
@@ -593,9 +609,41 @@ function capitalizeTab(t){
     requests:'Login Requests', activity:'Activity Log', scan:'Scan', myactivity:'My Activity', gate:'Gate', roster:'Leave Roster' };
   return map[t]||t;
 }
+let cachedLogoImg = null;
 function renderQRInto(elementId, text){
   const el = document.getElementById(elementId); if (!el || typeof QRCode==='undefined') return;
-  el.innerHTML=''; new QRCode(el, { text, width:150, height:150, correctLevel: QRCode.CorrectLevel.M });
+  el.innerHTML=''; new QRCode(el, { text, width:150, height:150, correctLevel: QRCode.CorrectLevel.H });
+  drawLogoOnQR(el);
+}
+function drawLogoOnQR(el){
+  if (!cachedLogoImg) return;
+  const canvas = el.querySelector('canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const size = canvas.width;
+  const logoSize = size * 0.22; // kept small and centered — well within the High error-correction level's recovery margin, so the code still scans reliably
+  const x = (size-logoSize)/2, y = (size-logoSize)/2;
+  const pad = logoSize*0.12;
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(x-pad, y-pad, logoSize+pad*2, logoSize+pad*2);
+  ctx.drawImage(cachedLogoImg, x, y, logoSize, logoSize);
+}
+function preloadLogoImage(dataUrl){
+  return new Promise((resolve)=>{
+    if (!dataUrl){ cachedLogoImg=null; resolve(); return; }
+    const img = new Image();
+    img.onload = ()=>{ cachedLogoImg = img; resolve(); };
+    img.onerror = ()=>{ cachedLogoImg = null; resolve(); };
+    img.src = dataUrl;
+  });
+}
+async function loadHostelLogo(){
+  try{
+    const rows = await sbSelect('app_settings', '?key=eq.logo&select=value');
+    const row = rows && rows[0];
+    state.hostelLogoDataUrl = row ? row.value : null;
+    await preloadLogoImage(state.hostelLogoDataUrl);
+  }catch(e){ state.hostelLogoDataUrl = null; cachedLogoImg = null; }
 }
 function buzz(pattern){ try{ if (navigator.vibrate) navigator.vibrate(pattern); }catch(e){} }
 function localDateStr(d){
@@ -700,7 +748,7 @@ function renderLightbox(){
 function renderSetup(){
   const err = state.setupError;
   return `<div class="login-screen"><div class="login-card">
-    <div class="brand brand-center"><div class="brand-mark">V</div><div class="brand-text">Vidya Gram</div></div>
+    <div class="brand brand-center"><div class="brand-mark">V</div><div class="brand-text">VIDYA GRAM</div></div>
     <p class="login-tagline">Connect this app to your Supabase project</p>
     ${err?`<div class="login-error">${esc(err)}</div>`:''}
     <div class="setup-note">Find these under <b>Project Settings → API</b>. This browser will remember them after you connect once.</div>
@@ -720,7 +768,7 @@ function renderLoading(){ return `<div class="loading-screen"><div class="loadin
 function renderLogin(){
   const err = state.loginError;
   return `<div class="login-screen"><div class="login-card">
-    <div class="brand brand-center"><div class="brand-mark">V</div><div class="brand-text">Vidya Gram</div></div>
+    <div class="brand brand-center"><div class="brand-mark">V</div><div class="brand-text">VIDYA GRAM</div></div>
     <p class="login-tagline">Student records, fees, gate &amp; ID scanning</p>
     ${err?`<div class="login-error">${esc(err)}</div>`:''}
     <label>Email<input id="login-email" onkeydown="if(event.key==='Enter') document.getElementById('login-password').focus()" /></label>
@@ -733,7 +781,7 @@ function renderLogin(){
 function reopenSetup(){ state.view='setup'; update(); }
 function renderWaitingApproval(){
   return `<div class="login-screen"><div class="login-card" style="text-align:center;">
-    <div class="brand brand-center"><div class="brand-mark">V</div><div class="brand-text">Vidya Gram</div></div>
+    <div class="brand brand-center"><div class="brand-mark">V</div><div class="brand-text">VIDYA GRAM</div></div>
     <h3>Waiting for approval</h3>
     <p class="muted">An admin needs to approve this login before you can continue. Keep this page open — it'll continue automatically once approved.</p>
     <button class="btn btn-ghost" onclick="cancelApprovalWait()">Cancel</button>
@@ -840,7 +888,7 @@ function stopInactivityWatch(){
   ['click','keydown','touchstart'].forEach(evt => document.removeEventListener(evt, markActivity, true));
 }
 async function loadAllForRole(){
-  if (state.user.role==='admin') await Promise.all([loadStudents(), loadProfiles(), loadActivity(), loadLeaves(), loadBatches(), loadLoginRequests(), loadTotalDiscounts()]);
+  if (state.user.role==='admin') await Promise.all([loadStudents(), loadProfiles(), loadActivity(), loadLeaves(), loadBatches(), loadLoginRequests(), loadTotalDiscounts(), loadHostelLogo()]);
   else if (state.user.role==='accountant' || state.user.role==='viewer') await Promise.all([loadStudents(), loadActivity(), loadLeaves(), loadBatches(), loadTotalDiscounts()]);
   else await loadActivity();
 }
@@ -917,7 +965,7 @@ function renderAdminShell(){
   const pendingCount = state.loginRequests.filter(r=>r.status==='pending').length;
   return `<div class="app-shell">
     <nav class="sidebar">
-      <div class="brand"><div class="brand-mark">V</div><div class="brand-text">Vidya<br>Gram</div></div>
+      <div class="brand"><div class="brand-mark">V</div><div class="brand-text">VIDYA<br>GRAM</div></div>
       <button class="nav-item ${state.adminTab==='dashboard'?'active':''}" onclick="setAdminTab('dashboard')">Dashboard</button>
       <button class="nav-item ${state.adminTab==='students'?'active':''}" onclick="setAdminTab('students')">Students</button>
       <button class="nav-item ${state.adminTab==='leaves'?'active':''}" onclick="setAdminTab('leaves')">Leaves</button>
@@ -954,7 +1002,7 @@ function setAdminTab(tab){
 function renderViewerShell(){
   return `<div class="app-shell">
     <nav class="sidebar">
-      <div class="brand"><div class="brand-mark">V</div><div class="brand-text">Vidya<br>Gram</div></div>
+      <div class="brand"><div class="brand-mark">V</div><div class="brand-text">VIDYA<br>GRAM</div></div>
       <button class="nav-item ${state.viewerTab==='dashboard'?'active':''}" onclick="setViewerTab('dashboard')">Dashboard</button>
       <button class="nav-item ${state.viewerTab==='students'?'active':''}" onclick="setViewerTab('students')">Students</button>
       <button class="nav-item ${state.viewerTab==='leaves'?'active':''}" onclick="setViewerTab('leaves')">Leaves</button>
@@ -1653,10 +1701,10 @@ function downloadQR(rollNo){
 }
 function idCardHTML(s){
   const safeRoll = safeId(s.roll_no);
-  return `<div class="id-card"><div class="id-card-head">विद्या ग्राम छात्रावास · Student ID</div>
+  return `<div class="id-card"><div class="id-card-head"><b>विद्या ग्राम छात्रावास </b>· Student ID</div>
     <div class="id-card-body"><div id="printqr-${safeRoll}" class="id-qr"></div>
       <div class="id-info"><div class="id-name">${esc(s.name)}</div><div class="id-roll">${esc(s.roll_no)}</div>
-        <div class="id-meta">Room: ${esc(s.room||'—')}</div></div></div></div>`;
+        <div class="id-meta">Room ${esc(s.room||'—')}</div></div></div></div>`;
 }
 function printIDCard(rollNo){
   const s = state.students.find(x=>x.roll_no.toLowerCase()===rollNo.toLowerCase());
@@ -2330,9 +2378,85 @@ function restorePaymentAction(id, source){
 /* ============================================================
    STAFF TAB (admin — manage admin/accountant/gatekeeper profiles + permissions)
    ============================================================ */
+function openLogoModal(){ state.modal = { type:'logoUpload', preview: state.hostelLogoDataUrl||null }; update(); }
+function logoUploadModalHTML(m){
+  return `<div class="modal-overlay" onclick="if(event.target===this) closeModal()"><div class="modal">
+    <h3>Hostel logo</h3>
+    <p class="muted">Square images work best. It'll be resized automatically and shown small, centered on every QR code — the QR still scans normally either way.</p>
+    <div class="photo-row">
+      <div class="photo-preview" id="logo-preview-holder">${m.preview?`<img src="${m.preview}" alt="" />`:'Preview'}</div>
+      <input type="file" id="logo-file-input" accept="image/*" onchange="onLogoFileSelected(event)" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="logo-save-btn" onclick="saveHostelLogo()" ${!m.preview?'disabled':''}>Save logo</button>
+    </div>
+  </div></div>`;
+}
+function onLogoFileSelected(event){
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      // Resize to a small fixed square so the stored value stays tiny and QR rendering stays fast
+      const size = 160;
+      const canvas = document.createElement('canvas');
+      canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,size,size);
+      const scale = Math.min(size/img.width, size/img.height);
+      const w = img.width*scale, h = img.height*scale;
+      ctx.drawImage(img, (size-w)/2, (size-h)/2, w, h);
+      const dataUrl = canvas.toDataURL('image/png');
+      if (state.modal) state.modal.preview = dataUrl;
+      const holder = document.getElementById('logo-preview-holder');
+      if (holder) holder.innerHTML = `<img src="${dataUrl}" alt="" />`;
+      const btn = document.getElementById('logo-save-btn'); if (btn) btn.disabled = false;
+    };
+    img.onerror = ()=> toast('Could not read that image.','error');
+    img.src = e.target.result;
+  };
+  reader.onerror = ()=> toast('Could not read that file.','error');
+  reader.readAsDataURL(file);
+}
+async function saveHostelLogo(){
+  const dataUrl = state.modal && state.modal.preview;
+  if (!dataUrl){ toast('Choose an image first.','error'); return; }
+  const btn = document.getElementById('logo-save-btn'); if (btn){ btn.disabled=true; btn.textContent='Saving…'; }
+  try{
+    await sbUpsert('app_settings', { key:'logo', value:dataUrl }, 'key');
+    state.hostelLogoDataUrl = dataUrl;
+    await preloadLogoImage(dataUrl);
+    closeModal();
+    toast('Logo saved.','success');
+  }catch(e){ toast(e.message,'error'); if (btn){ btn.disabled=false; btn.textContent='Save logo'; } }
+}
+async function removeHostelLogo(){
+  confirmAction('Remove the hostel logo from QR codes?', async ()=>{
+    try{
+      await sbDelete('app_settings', '?key=eq.logo');
+      state.hostelLogoDataUrl = null; cachedLogoImg = null;
+      toast('Logo removed.','success');
+    }catch(e){ toast(e.message,'error'); }
+    update();
+  });
+}
 function renderStaffTab(){
   return `<div class="card" style="margin-bottom:18px;"><h3>Add staff</h3>
     <p class="muted">Create their login in Supabase: <span class="mono">Authentication → Users → Add user</span>. They'll appear below automatically as an Accountant — set their name, role and permissions here.</p>
+  </div>
+  <div class="card" style="margin-bottom:18px;">
+    <h3>Branding</h3>
+    <div style="display:flex; align-items:center; gap:16px;">
+      <div class="photo-preview" style="width:56px;height:56px;">${state.hostelLogoDataUrl?`<img src="${state.hostelLogoDataUrl}" alt="Hostel logo" />`:'No logo'}</div>
+      <div>
+        <p class="muted" style="margin:0 0 8px;">Shown centered on every printed and downloaded student QR code.</p>
+        <button class="btn btn-secondary" onclick="openLogoModal()">${state.hostelLogoDataUrl?'Change logo':'Upload logo'}</button>
+        ${state.hostelLogoDataUrl?` <button class="btn btn-ghost" onclick="removeHostelLogo()">Remove</button>`:''}
+      </div>
+    </div>
   </div>
   <div class="card no-pad"><table class="table"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Permissions (accountants only)</th><th>Status</th><th></th></tr></thead>
     <tbody>${state.accounts.map(renderAccountRow).join('')}</tbody></table></div>`;
@@ -2725,6 +2849,7 @@ function renderModal(){
     case 'markFullPaid': return markFullPaidModalHTML(state.modal);
     case 'logHistoricalPayment': return logHistoricalPaymentModalHTML(state.modal);
     case 'missingPaymentCheck': return missingPaymentCheckModalHTML(state.modal);
+    case 'logoUpload': return logoUploadModalHTML(state.modal);
     case 'changepw': return changePasswordModalHTML();
     case 'confirm': return `<div class="modal-overlay"><div class="modal modal-sm"><p>${esc(state.modal.message)}</p><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-danger" onclick="runConfirmedAction()">Confirm</button></div></div></div>`;
     default: return '';
