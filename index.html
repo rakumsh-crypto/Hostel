@@ -211,6 +211,7 @@ a{color:var(--primary);}
 .perm-checks label{display:flex; align-items:center; gap:4px; text-transform:none; font-weight:500;}
 
 .student-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:14px;}
+.pagination-footer{display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:18px; padding-top:16px; border-top:1px solid var(--border); flex-wrap:wrap;}
 .gender-section{margin-bottom:28px;}
 .gender-section-title{font-size:17px; margin-bottom:14px; padding-bottom:8px; border-bottom:2px solid var(--primary);}
 .room-group{margin-bottom:18px;}
@@ -345,6 +346,7 @@ a{color:var(--primary);}
 <body>
 <div id="app"></div>
 <div id="print-area"></div>
+<div id="toast-container"></div>
 
 <script>
 /* ============================================================
@@ -364,7 +366,7 @@ const HARDCODED_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3
 let state = {
   view:'loading', sbUrl:null, sbAnonKey:null, user:null,
   students:[], accounts:[], activity:[], leaves:[], batches:[],
-  studentsView:'active', sortBy:'name', duesFilter:'all', studentGroupView:false,
+  studentsView:'active', sortBy:'name', duesFilter:'all', studentGroupView:false, studentsPage:1, studentsPageSize:60,
   adminTab:'dashboard', accTab:'scan', gateTab:'gate', viewerTab:'dashboard',
   search:'', modal:null, scanResult:null, gateResult:null, scanning:false,
   toast:null, loginError:null, setupError:null,
@@ -736,14 +738,18 @@ function runPostRenderEffects(){
   loadPhotosForVisibleCards();
   loadRosterPhotos();
 }
+let toastHideTimer = null;
 function toast(message, kind){
   if (message === '__session_expired__') return; // already handled with a clean redirect + its own message — avoid a redundant/confusing second popup
   if (!state.user && state.view !== 'app') return; // avoid showing a stale background request's error after the person has already been logged out
-  kind = kind||'success'; state.toast = { message, kind, id: Date.now() }; update();
-  const myId = state.toast.id;
-  setTimeout(()=>{ if (state.toast && state.toast.id===myId){ state.toast=null; update(); } }, 3200);
+  kind = kind || 'success';
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+  container.innerHTML = `<div class="toast toast-${kind}">${esc(message)}</div>`;
+  if (toastHideTimer) clearTimeout(toastHideTimer);
+  toastHideTimer = setTimeout(()=>{ container.innerHTML = ''; }, 3200);
 }
-function renderToast(){ if(!state.toast) return ''; return `<div class="toast toast-${state.toast.kind}">${esc(state.toast.message)}</div>`; }
+function renderToast(){ return ''; } // toasts now render via a persistent container outside #app — see toast()
 function closeModal(){ state.modal=null; update(); }
 document.addEventListener('keydown', (e)=>{ if (e.key==='Escape' && state.modal) closeModal(); });
 function confirmAction(message, callback){ pendingConfirmCallback=callback; state.modal={type:'confirm',message}; update(); }
@@ -1201,13 +1207,26 @@ function renderStudentsTab(){
       ${state.studentsView==='active' && canAdd? `<button class="btn btn-primary" onclick="openStudentForm(null)">Add student</button>` : ''}
     </div>
   </div>
-  ${!list.length ? `<div class="card"><p class="empty-hint">${state.studentsView==='recycle'?'Recycle bin is empty.':'No students match. Try a different search, or add your first student.'}</p></div>` :
-    state.studentGroupView ? renderStudentsGroupedByGenderRoom(list) : `<div class="student-grid">${list.map(renderStudentCard).join('')}</div>`}
+  ${!list.length ? `<div class="card"><p class="empty-hint">${state.studentsView==='recycle'?'Recycle bin is empty.':'No students match. Try a different search, or add your first student.'}</p></div>` : renderPaginatedStudentList(list)}
   `;
 }
-function onSearchInput(val){ state.search=val; update(); }
-function setStudentsView(v){ state.studentsView=v; state.search=''; loadStudents().then(update); }
-function setStudentGroupView(v){ state.studentGroupView=v; update(); }
+function renderPaginatedStudentList(list){
+  const pageSize = state.studentsPageSize || 60;
+  const shownCount = Math.min(list.length, (state.studentsPage||1) * pageSize);
+  const pageList = list.slice(0, shownCount);
+  const body = state.studentGroupView ? renderStudentsGroupedByGenderRoom(pageList) : `<div class="student-grid">${pageList.map(renderStudentCard).join('')}</div>`;
+  const hasMore = shownCount < list.length;
+  return `${body}
+  <div class="pagination-footer">
+    <span class="muted">Showing ${shownCount} of ${list.length} student${list.length===1?'':'s'}</span>
+    ${hasMore? `<button class="btn btn-secondary" onclick="loadMoreStudents()">Load more</button>` : ''}
+  </div>`;
+}
+function loadMoreStudents(){ state.studentsPage = (state.studentsPage||1) + 1; update(); }
+function resetStudentsPagination(){ state.studentsPage = 1; }
+function onSearchInput(val){ state.search=val; resetStudentsPagination(); update(); }
+function setStudentsView(v){ state.studentsView=v; state.search=''; resetStudentsPagination(); loadStudents().then(update); }
+function setStudentGroupView(v){ state.studentGroupView=v; resetStudentsPagination(); update(); }
 function groupStudentsByRoom(arr){
   const withRoom = {}; const withoutRoom = [];
   arr.forEach(s=>{
@@ -1238,8 +1257,8 @@ function renderStudentsGroupedByGenderRoom(list){
   const html = renderGenderSection('Male', male) + renderGenderSection('Female', female) + renderGenderSection('Not specified', other);
   return html || `<div class="card"><p class="empty-hint">No students match.</p></div>`;
 }
-function setSortBy(v){ state.sortBy=v; update(); }
-function setDuesFilter(v){ state.duesFilter=v; update(); }
+function setSortBy(v){ state.sortBy=v; resetStudentsPagination(); update(); }
+function setDuesFilter(v){ state.duesFilter=v; resetStudentsPagination(); update(); }
 function loadPhotosForVisibleCards(){
   document.querySelectorAll('[data-photo-for]').forEach(el=>{
     const id = el.getAttribute('data-photo-for');
@@ -1695,7 +1714,7 @@ function profileModalHTML(s, payments, leaveHistory, attendanceHistory){
       ${monthlyStatusHTML(s)}
       ${conversionSuggestionHTML(s, batch, isAdmin)}
       ${canRecordPayment ? recordPaymentFormHTML(s.roll_no) : ''}
-      ${payments && payments.length ? `<table class="table"><tbody>${payments.map(p=>`<tr><td>${fmtTime(p.created_at)}</td><td>${fmtMoney(p.amount)}</td><td class="muted">${p.payment_method==='discount'?'<span class="badge badge-discount">discount</span>':esc(p.payment_method||'cash')}${p.payment_method==='online'&&p.bank_name?' · '+esc(p.bank_name):''}${p.payment_method==='online'&&p.transaction_uid?' · '+esc(p.transaction_uid):''}</td><td class="muted">${esc(p.recorded_by_name||'')}</td><td class="muted">${esc(p.note||'')}</td>${isAdmin&&p.payment_method!=='discount'?`<td class="row-actions"><button class="icon-btn" onclick="openEditPaymentModal('${escAttr(p.id)}','profile')">Edit</button><button class="icon-btn icon-danger" onclick="archivePaymentAction('${escAttr(p.id)}','profile')">Bin</button></td>`:isAdmin?'<td></td>':''}</tr>`).join('')}</tbody></table>` : '<p class="muted">No payments recorded yet.</p>'}
+      ${payments && payments.length ? `<table class="table"><tbody>${payments.map(p=>`<tr><td class="mono muted">${esc(p.txn_ref||'—')}</td><td>${fmtTime(p.created_at)}</td><td>${fmtMoney(p.amount)}</td><td class="muted">${p.payment_method==='discount'?'<span class="badge badge-discount">discount</span>':esc(p.payment_method||'cash')}${p.payment_method==='online'&&p.bank_name?' · '+esc(p.bank_name):''}${p.payment_method==='online'&&p.transaction_uid?' · '+esc(p.transaction_uid):''}</td><td class="muted">${esc(p.recorded_by_name||'')}</td><td class="muted">${esc(p.note||'')}</td>${isAdmin&&p.payment_method!=='discount'?`<td class="row-actions"><button class="icon-btn" onclick="openEditPaymentModal('${escAttr(p.id)}','profile')">Edit</button><button class="icon-btn icon-danger" onclick="archivePaymentAction('${escAttr(p.id)}','profile')">Bin</button></td>`:isAdmin?'<td></td>':''}</tr>`).join('')}</tbody></table>` : '<p class="muted">No payments recorded yet.</p>'}
       ${isAdmin ? `<p style="margin-top:8px;"><button class="link-btn" onclick="openLogHistoricalPayment('${escAttr(s.roll_no)}','${escAttr(s.name)}')">+ Log a missing/historical payment</button></p>` : ''}
 
       <div class="profile-section-title">Leave history (${leavesTaken} completed)</div>
@@ -2224,14 +2243,20 @@ async function markAttendance(code, sessionKey){
 /* ============================================================
    TRANSACTIONS TAB (admin sees all; recorded_by_name is denormalized)
    ============================================================ */
-async function loadAllPayments(){ try{ return await sbSelect('payments', '?select=*,students(roll_no,name)&order=created_at.desc&limit=500'); }catch(e){ return []; } }
+async function loadAllPayments(from, to){
+  let q = '?select=*,students(roll_no,name)&order=created_at.desc&limit=1000';
+  if (from) q += `&created_at=gte.${from}T00:00:00`;
+  if (to) q += `&created_at=lte.${to}T23:59:59`;
+  try{ return await sbSelect('payments', q); }catch(e){ return []; }
+}
 function renderTransactionsTab(){
-  if (!state._allPayments){ loadAllPayments().then(p=>{ state._allPayments=p; update(); }); return `<div class="card"><p class="empty-hint">Loading transactions…</p></div>`; }
+  if (!state._allPayments){ loadAllPayments(state.txnDateFrom, state.txnDateTo).then(p=>{ state._allPayments=p; update(); }); return `<div class="card"><p class="empty-hint">Loading transactions…</p></div>`; }
   const isRecycle = state.txnView==='recycle';
   const byView = state._allPayments.filter(p=> isRecycle ? p.archived : !p.archived);
   const filtered = filterByDate(byView, state.txnDateFrom, state.txnDateTo, 'created_at');
   const total = filtered.reduce((s,p)=>s+(p.amount||0),0);
-  return `<div class="toolbar">
+  const cappedWarning = state._allPayments.length>=1000 ? `<p class="muted" style="color:var(--amber);">⚠ Showing the most recent 1000 matching transactions — narrow the date range above to see everything in a busy period.</p>` : '';
+  return `${cappedWarning}<div class="toolbar">
     <div class="manual-row">
       <input type="date" class="date-input" id="txn-from" value="${state.txnDateFrom||''}" onchange="setTxnDateFilter(this.value, document.getElementById('txn-to').value)" />
       <input type="date" class="date-input" id="txn-to" value="${state.txnDateTo||''}" onchange="setTxnDateFilter(document.getElementById('txn-from').value, this.value)" />
@@ -2242,8 +2267,9 @@ function renderTransactionsTab(){
     </div>
     <div class="toolbar-actions"><span class="muted">Total: <b>${fmtMoney(total)}</b></span><button class="btn btn-secondary" onclick="state._allPayments=null; update();">Refresh</button></div>
   </div>
-  <div class="card no-pad"><table class="table"><thead><tr><th>Student</th><th>Amount</th><th>Method</th><th>Details</th><th>By</th><th>When</th><th></th></tr></thead>
+  <div class="card no-pad"><table class="table"><thead><tr><th>Txn ID</th><th>Student</th><th>Amount</th><th>Method</th><th>Details</th><th>By</th><th>When</th><th></th></tr></thead>
     <tbody>${filtered.length? filtered.map(p=>{ const stu=p.students||{}; return `<tr style="cursor:pointer;" onclick="openTransactionDetail('${escAttr(p.id)}','all',${isRecycle})">
+      <td data-label="Txn ID" class="mono muted">${esc(p.txn_ref||'—')}</td>
       <td data-label="Student">${esc(stu.name||'')} <span class="muted mono">${esc(stu.roll_no||'')}</span></td>
       <td data-label="Amount">${fmtMoney(p.amount)}</td>
       <td data-label="Method"><span class="badge badge-${p.payment_method==='discount'?'discount':'payment'}">${esc(p.payment_method||'cash')}</span></td>
@@ -2251,7 +2277,7 @@ function renderTransactionsTab(){
       <td data-label="By" class="muted">${esc(p.recorded_by_name||'')}</td>
       <td data-label="When" class="muted">${fmtTime(p.created_at)}</td>
       <td data-label="" class="row-actions" onclick="event.stopPropagation()">${p.payment_method==='discount' ? '' : isRecycle? `<button class="icon-btn" onclick="restorePaymentAction('${escAttr(p.id)}','all')">Restore</button>` : `<button class="icon-btn" onclick="openEditPaymentModal('${escAttr(p.id)}','all')">Edit</button><button class="icon-btn icon-danger" onclick="archivePaymentAction('${escAttr(p.id)}','all')">Bin</button>`}</td>
-    </tr>`; }).join('') : `<tr><td colspan="7" class="empty-hint">No transactions in this range.</td></tr>`}</tbody></table></div>`;
+    </tr>`; }).join('') : `<tr><td colspan="8" class="empty-hint">No transactions in this range.</td></tr>`}</tbody></table></div>`;
 }
 function openTransactionDetail(paymentId, source, isRecycle){
   const list = source==='all' ? (state._allPayments||[]) : (state._myPayments||[]);
@@ -2264,6 +2290,7 @@ function openTransactionDetail(paymentId, source, isRecycle){
     ? `<div class="modal-actions" style="justify-content:flex-start;"><button class="btn btn-secondary" onclick="closeModal(); restorePaymentAction('${escAttr(p.id)}','${source}')">Restore</button></div>`
     : `<div class="modal-actions" style="justify-content:flex-start;"><button class="btn btn-secondary" onclick="closeModal(); openEditPaymentModal('${escAttr(p.id)}','${source}')">Edit</button><button class="btn btn-danger" onclick="closeModal(); archivePaymentAction('${escAttr(p.id)}','${source}')">Move to recycle bin</button></div>`;
   openRowDetail(`${esc(stu.name||'')} — Transaction`, [
+    { label:'Transaction ID', value:`<span class="mono">${esc(p.txn_ref||'—')}</span>` },
     { label:'Roll number', value:`<span class="mono">${esc(stu.roll_no||'')}</span>` },
     { label:'Amount', value: fmtMoney(p.amount) },
     { label:'Method', value: `<span class="badge badge-${isDiscount?'discount':'payment'}">${esc(p.payment_method||'cash')}</span>` },
@@ -2791,11 +2818,12 @@ function renderMyActivityTab(){
     <div class="card no-pad"><table class="table"><thead><tr><th>Type</th><th>Details</th><th>By</th><th>When</th></tr></thead>
       <tbody>${mineActivity.length? mineActivity.map(renderActivityRow).join('') : `<tr><td colspan="4" class="empty-hint">No activity yet.</td></tr>`}</tbody></table></div>`;
   }
-  if (!state._myPayments){ loadMyPayments().then(p=>{ state._myPayments=p; update(); }); return `<div class="card"><p class="empty-hint">Loading…</p></div>`; }
+  if (!state._myPayments){ loadMyPayments(state.myTxnDateFrom, state.myTxnDateTo).then(p=>{ state._myPayments=p; update(); }); return `<div class="card"><p class="empty-hint">Loading…</p></div>`; }
   const filtered = filterByDate(state._myPayments, state.myTxnDateFrom, state.myTxnDateTo, 'created_at');
   const total = filtered.reduce((s,p)=>s+(p.amount||0),0);
   const mineActivity = filterByDate(state.activity.filter(a=>a.by_name===state.user.name), state.myTxnDateFrom, state.myTxnDateTo, 'created_at').slice(0,50);
-  return `<div class="toolbar">
+  const cappedWarning = state._myPayments.length>=1000 ? `<p class="muted" style="color:var(--amber);">⚠ Showing your most recent 1000 matching payments — narrow the date range above to see everything in a busy period.</p>` : '';
+  return `${cappedWarning}<div class="toolbar">
     <div class="manual-row">
       <input type="date" class="date-input" id="myt-from" value="${state.myTxnDateFrom||''}" onchange="setMyTxnDateFilter(this.value, document.getElementById('myt-to').value)" />
       <input type="date" class="date-input" id="myt-to" value="${state.myTxnDateTo||''}" onchange="setMyTxnDateFilter(document.getElementById('myt-from').value, this.value)" />
@@ -2807,8 +2835,13 @@ function renderMyActivityTab(){
   <div class="card no-pad"><table class="table"><thead><tr><th>Type</th><th>Details</th><th>By</th><th>When</th></tr></thead>
     <tbody>${mineActivity.length? mineActivity.map(renderActivityRow).join('') : `<tr><td colspan="4" class="empty-hint">No activity yet.</td></tr>`}</tbody></table></div>`;
 }
-async function loadMyPayments(){ try{ return await sbSelect('payments', `?recorded_by=eq.${state.user.id}&archived=eq.false&select=*,students(roll_no,name)&order=created_at.desc&limit=400`); }catch(e){ return []; } }
-function setMyTxnDateFilter(from,to){ state.myTxnDateFrom=from||null; state.myTxnDateTo=to||null; update(); }
+async function loadMyPayments(from, to){
+  let q = `?recorded_by=eq.${state.user.id}&archived=eq.false&select=*,students(roll_no,name)&order=created_at.desc&limit=1000`;
+  if (from) q += `&created_at=gte.${from}T00:00:00`;
+  if (to) q += `&created_at=lte.${to}T23:59:59`;
+  try{ return await sbSelect('payments', q); }catch(e){ return []; }
+}
+function setMyTxnDateFilter(from,to){ state.myTxnDateFrom=from||null; state.myTxnDateTo=to||null; state._myPayments=null; update(); }
 async function recordPayment(rollNo){
   const amount = parseFloat(document.getElementById('pay-amount').value);
   const method = document.getElementById('pay-method').value;
