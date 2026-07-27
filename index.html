@@ -1207,26 +1207,13 @@ function renderStudentsTab(){
       ${state.studentsView==='active' && canAdd? `<button class="btn btn-primary" onclick="openStudentForm(null)">Add student</button>` : ''}
     </div>
   </div>
-  ${!list.length ? `<div class="card"><p class="empty-hint">${state.studentsView==='recycle'?'Recycle bin is empty.':'No students match. Try a different search, or add your first student.'}</p></div>` : renderPaginatedStudentList(list)}
+  ${!list.length ? `<div class="card"><p class="empty-hint">${state.studentsView==='recycle'?'Recycle bin is empty.':'No students match. Try a different search, or add your first student.'}</p></div>` :
+    state.studentGroupView ? renderStudentsGroupedByGenderRoom(list) : `<div class="student-grid">${list.map(renderStudentCard).join('')}</div>`}
   `;
 }
-function renderPaginatedStudentList(list){
-  const pageSize = state.studentsPageSize || 60;
-  const shownCount = Math.min(list.length, (state.studentsPage||1) * pageSize);
-  const pageList = list.slice(0, shownCount);
-  const body = state.studentGroupView ? renderStudentsGroupedByGenderRoom(pageList) : `<div class="student-grid">${pageList.map(renderStudentCard).join('')}</div>`;
-  const hasMore = shownCount < list.length;
-  return `${body}
-  <div class="pagination-footer">
-    <span class="muted">Showing ${shownCount} of ${list.length} student${list.length===1?'':'s'}</span>
-    ${hasMore? `<button class="btn btn-secondary" onclick="loadMoreStudents()">Load more</button>` : ''}
-  </div>`;
-}
-function loadMoreStudents(){ state.studentsPage = (state.studentsPage||1) + 1; update(); }
-function resetStudentsPagination(){ state.studentsPage = 1; }
-function onSearchInput(val){ state.search=val; resetStudentsPagination(); update(); }
-function setStudentsView(v){ state.studentsView=v; state.search=''; resetStudentsPagination(); loadStudents().then(update); }
-function setStudentGroupView(v){ state.studentGroupView=v; resetStudentsPagination(); update(); }
+function onSearchInput(val){ state.search=val; update(); }
+function setStudentsView(v){ state.studentsView=v; state.search=''; loadStudents().then(update); }
+function setStudentGroupView(v){ state.studentGroupView=v; update(); }
 function groupStudentsByRoom(arr){
   const withRoom = {}; const withoutRoom = [];
   arr.forEach(s=>{
@@ -1257,22 +1244,16 @@ function renderStudentsGroupedByGenderRoom(list){
   const html = renderGenderSection('Male', male) + renderGenderSection('Female', female) + renderGenderSection('Not specified', other);
   return html || `<div class="card"><p class="empty-hint">No students match.</p></div>`;
 }
-function setSortBy(v){ state.sortBy=v; resetStudentsPagination(); update(); }
-function setDuesFilter(v){ state.duesFilter=v; resetStudentsPagination(); update(); }
+function setSortBy(v){ state.sortBy=v; update(); }
+function setDuesFilter(v){ state.duesFilter=v; update(); }
 function loadPhotosForVisibleCards(){
   document.querySelectorAll('[data-photo-for]').forEach(el=>{
     const id = el.getAttribute('data-photo-for');
     const s = state.students.find(x=>x.id===id);
-    if (!s || !s.photo_path) return;
-    const cached = photoUrlCache[s.photo_path];
-    if (cached && cached.expiresAt > Date.now()){ el.innerHTML = `<img src="${cached.url}" alt="${esc(s.name)}" />`; return; }
-    getCachedPhotoUrl(s.photo_path).then(url=>{
-      if (!url || !el.isConnected) return;
-      el.innerHTML = `<img src="${url}" alt="${esc(s.name)}" />`;
-    });
+    if (!s || !s.photo_path || el.querySelector('img')) return;
+    sbSignedUrl('student-photos', s.photo_path, 600).then(url=>{ if (url && el.isConnected) el.innerHTML = `<img src="${url}" alt="" />`; }).catch(()=>{});
   });
 }
-
 /* ============================================================
    BATCHES
    ============================================================ */
