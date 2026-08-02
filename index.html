@@ -201,6 +201,7 @@ a{color:var(--primary);}
 .badge-role_change,.badge-permission_change,.badge-account_status_change{background:var(--primary-soft); color:var(--primary-dark);}
 .badge-payment_backfill{background:var(--green-soft); color:var(--green);}
 .badge-attendance{background:#E3ECF9; color:#3D6B9C;}
+.badge-assignment_created,.badge-assignment_recorded{background:var(--primary-soft); color:var(--primary-dark);}
 .badge-approved{background:var(--amber-soft); color:var(--amber);}
 .badge-out{background:#FDECEA; color:var(--red);}
 .badge-completed{background:var(--green-soft); color:var(--green);}
@@ -374,6 +375,7 @@ let state = {
   myTxnDateFrom:null, myTxnDateTo:null,
   loginRequests:[], myLoginRequestId:null,
   attDate:null, attListView:false, attListSearch:'',
+  openAssignmentId:null, openAssignmentName:null,
   theme:'light', fontSize:'normal'
 };
 let session = null;
@@ -384,6 +386,10 @@ let attendanceSessionResolved = new Set(); // codes already successfully marked 
 let attendancePending = new Set(); // codes currently mid-request, to avoid duplicate concurrent calls
 let attendanceErrorCooldown = {}; // code -> timestamp, for retryable errors (not found, out of campus) so they don't spam every decode frame
 let attendanceSessionCount = 0; // live tally for this scanning burst, shown without a full re-render
+let assignmentSessionResolved = new Set(); // key = assignmentId:rollNo
+let assignmentPending = new Set();
+let assignmentErrorCooldown = {};
+let assignmentSessionCount = 0;
 
 /* ============================================================
    STORAGE LAYER (Claude artifact storage when previewing inside
@@ -615,7 +621,8 @@ function activityLabel(t){
     student_archive:'Moved to recycle bin', student_restore:'Restored', student_purge:'Permanently deleted',
     leave_granted:'Leave granted', leave_out:'Marked out', leave_in:'Marked in', leave_revoked:'Leave revoked',
     role_change:'Role changed', permission_change:'Permission changed', account_status_change:'Account status changed',
-    payment_backfill:'Historical payment logged', attendance:'Attendance marked' };
+    payment_backfill:'Historical payment logged', attendance:'Attendance marked',
+    assignment_created:'Assignment created', assignment_recorded:'Assignment recorded' };
   return map[t]||t;
 }
 function capitalizeTab(t){
@@ -667,6 +674,7 @@ function localDateStr(d){
 }
 function currentScanMode(){
   if (state.user.role==='gatekeeper') return 'gate';
+  if (state.openAssignmentId) return 'assignment';
   if (state.user.role==='admin') return state.adminTab==='attendance' ? 'attendance' : 'fee';
   return state.accTab==='attendance' ? 'attendance' : 'fee';
 }
@@ -1001,11 +1009,12 @@ function renderAdminShell(){
   const pendingCount = state.loginRequests.filter(r=>r.status==='pending').length;
   return `<div class="app-shell">
     <nav class="sidebar">
-      <div class="brand"><div class="brand-mark">H</div><div class="brand-text">Vidya<br>Gram</div></div>
+      <div class="brand"><div class="brand-mark">H</div><div class="brand-text">Hostel<br>Register</div></div>
       <button class="nav-item ${state.adminTab==='dashboard'?'active':''}" onclick="setAdminTab('dashboard')">Dashboard</button>
       <button class="nav-item ${state.adminTab==='students'?'active':''}" onclick="setAdminTab('students')">Students</button>
       <button class="nav-item ${state.adminTab==='leaves'?'active':''}" onclick="setAdminTab('leaves')">Leaves</button>
       <button class="nav-item ${state.adminTab==='attendance'?'active':''}" onclick="setAdminTab('attendance')">Attendance</button>
+      <button class="nav-item ${state.adminTab==='assignments'?'active':''}" onclick="setAdminTab('assignments')">Assignments</button>
       <button class="nav-item ${state.adminTab==='transactions'?'active':''}" onclick="setAdminTab('transactions')">Transactions</button>
       <button class="nav-item ${state.adminTab==='staff'?'active':''}" onclick="setAdminTab('staff')">Staff</button>
       <button class="nav-item ${state.adminTab==='requests'?'active':''}" onclick="setAdminTab('requests')">Requests ${pendingCount>0?`<span class="nav-badge">${pendingCount}</span>`:''}</button>
@@ -1018,6 +1027,7 @@ function renderAdminShell(){
            state.adminTab==='students'?renderStudentsTab():
            state.adminTab==='leaves'?renderLeavesTab():
            state.adminTab==='attendance'?renderAttendanceTab():
+           state.adminTab==='assignments'?renderAssignmentsTab():
            state.adminTab==='transactions'?renderTransactionsTab():
            state.adminTab==='staff'?renderStaffTab():
            state.adminTab==='requests'?renderRequestsTab():
@@ -1038,7 +1048,7 @@ function setAdminTab(tab){
 function renderViewerShell(){
   return `<div class="app-shell">
     <nav class="sidebar">
-      <div class="brand"><div class="brand-mark">H</div><div class="brand-text">Vidya<br>Gram</div></div>
+      <div class="brand"><div class="brand-mark">H</div><div class="brand-text">Hostel<br>Register</div></div>
       <button class="nav-item ${state.viewerTab==='dashboard'?'active':''}" onclick="setViewerTab('dashboard')">Dashboard</button>
       <button class="nav-item ${state.viewerTab==='students'?'active':''}" onclick="setViewerTab('students')">Students</button>
       <button class="nav-item ${state.viewerTab==='leaves'?'active':''}" onclick="setViewerTab('leaves')">Leaves</button>
@@ -2176,6 +2186,125 @@ function openAttendanceDetail(id){
     { label:'Time', value: fmtTime(a.created_at) }
   ]);
 }
+
+/* ============================================================
+   ASSIGNMENTS — create a named task, then scan students against
+   it. Each assignment tracks completely independently: a student
+   can be recorded once per assignment, but freely across different
+   assignments (blocked at the database level via a real unique
+   constraint on (assignment_id, student_id), not just client logic).
+   ============================================================ */
+async function loadAssignments(){ try{ state._assignments = await sbSelect('assignments', '?select=*&order=created_at.desc'); }catch(e){ state._assignments=[]; } }
+async function loadAssignmentRecords(assignmentId){ try{ return await sbSelect('assignment_records', `?assignment_id=eq.${assignmentId}&select=*,students(roll_no,name)&order=created_at.desc`); }catch(e){ return []; } }
+function renderAssignmentsTab(){
+  if (state.openAssignmentId) return renderAssignmentDetail();
+  if (!state._assignments){ loadAssignments().then(update); return `<div class="card"><p class="empty-hint">Loading…</p></div>`; }
+  const canManage = canDo('manage_assignments');
+  return `<div class="toolbar"><div></div><div class="toolbar-actions">${canManage? `<button class="btn btn-primary" onclick="openNewAssignmentModal()">New assignment</button>`:''}</div></div>
+  <div class="student-grid">${state._assignments.length? state._assignments.map(a=>`<div class="student-card" onclick="openAssignmentDetail('${escAttr(a.id)}','${escAttr(a.name)}')">
+    <div class="sc-name">${esc(a.name)}</div>
+    <div class="sc-meta"><span class="muted">by ${esc(a.created_by_name||'')}</span><span class="muted">${fmtTime(a.created_at)}</span></div>
+  </div>`).join('') : '<p class="empty-hint">No assignments yet.</p>'}</div>`;
+}
+function openNewAssignmentModal(){ state.modal = { type:'newAssignment' }; update(); }
+function newAssignmentModalHTML(){
+  return `<div class="modal-overlay" onclick="if(event.target===this) closeModal()"><div class="modal">
+    <h3>New assignment</h3>
+    <div class="form-grid"><label>Name<input id="new-assignment-name" placeholder="e.g. Textbook Distribution 2026" /></label></div>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" id="new-assignment-btn" onclick="submitNewAssignment()">Create</button></div>
+  </div></div>`;
+}
+async function submitNewAssignment(){
+  const name = document.getElementById('new-assignment-name').value.trim();
+  if (!name){ toast('Give the assignment a name.','error'); return; }
+  const btn = document.getElementById('new-assignment-btn'); if (btn){ btn.disabled=true; btn.textContent='Creating…'; }
+  try{
+    const id = await sbRpc('create_assignment', { p_name:name });
+    closeModal();
+    await loadAssignments();
+    toast('Assignment created.','success');
+    openAssignmentDetail(id, name);
+  }catch(e){ toast(e.message,'error'); if (btn){ btn.disabled=false; btn.textContent='Create'; } }
+}
+function openAssignmentDetail(id, name){
+  state.openAssignmentId = id; state.openAssignmentName = name; state._assignmentRecords = null;
+  update();
+  loadAssignmentRecords(id).then(list=>{ state._assignmentRecords=list; update(); });
+}
+function closeAssignmentDetail(){
+  if (state.scanning) stopCamera();
+  state.openAssignmentId = null; state.openAssignmentName = null; state.scanning = false;
+  update();
+}
+function renderAssignmentDetail(){
+  const list = state._assignmentRecords;
+  return `
+  <button class="btn btn-ghost" style="margin-bottom:14px;" onclick="closeAssignmentDetail()">← All assignments</button>
+  <h2 style="margin-bottom:16px;">${esc(state.openAssignmentName||'')}</h2>
+  <div class="scan-panel ${state.scanning?'':'scan-idle'}" style="margin-bottom:22px;">
+    ${state.scanning ? `
+      <div class="scan-frame">
+        <div id="qr-reader"></div><div class="frame-corners"></div>
+        <div id="asn-feedback-holder" class="scan-feedback" style="display:none;"></div>
+      </div>
+      <p class="muted">Marked so far this session: <b id="asn-session-counter">${assignmentSessionCount}</b></p>
+      <button class="btn btn-ghost" onclick="stopAssignmentScan()">Stop scanning</button>${renderManualEntry()}
+    ` : `
+      <div class="scan-hero"><div class="scan-hero-icon">📋</div>
+      <button class="btn btn-primary btn-lg" onclick="startAssignmentScan()">Start camera scan</button></div>${renderManualEntry()}
+    `}
+  </div>
+  <div class="card no-pad"><table class="table"><thead><tr><th>Student</th><th>Recorded by</th><th>Time</th></tr></thead>
+    <tbody>${list===null ? `<tr><td colspan="3" class="empty-hint">Loading…</td></tr>` : list.length? list.map(r=>{ const stu=r.students||{}; return `<tr><td data-label="Student">${esc(stu.name||'')} <span class="mono muted">${esc(stu.roll_no||'')}</span></td><td data-label="Recorded by" class="muted">${esc(r.recorded_by_name||'')}</td><td data-label="Time" class="muted">${fmtTime(r.created_at)}</td></tr>`; }).join('') : `<tr><td colspan="3" class="empty-hint">No one recorded yet.</td></tr>`}</tbody></table></div>`;
+}
+function startAssignmentScan(){ assignmentSessionCount = 0; state.scanning=true; update(); setTimeout(initCamera,60); }
+function stopAssignmentScan(){
+  stopCamera(); state.scanning=false; update();
+  loadAssignmentRecords(state.openAssignmentId).then(list=>{ state._assignmentRecords=list; update(); });
+}
+async function recordAssignmentScan(code, sessionKey){
+  const normalized = String(code).trim();
+  const key = sessionKey || (state.openAssignmentId+':'+normalized.toLowerCase());
+  const viaCamera = state.scanning;
+  try{
+    let rows = state.students.filter(s=>s.roll_no.toLowerCase()===normalized.toLowerCase());
+    if (!rows.length){ await loadStudents(); rows = state.students.filter(s=>s.roll_no.toLowerCase()===normalized.toLowerCase()); }
+    if (!rows.length){
+      buzz([30,30,30]); assignmentErrorCooldown[key]=Date.now();
+      if (viaCamera) showAsnFeedback('error', `No match: ${normalized}`); else toast(`No student matches code "${normalized}".`,'error');
+      return;
+    }
+    const student = rows[0];
+    await sbRpc('record_assignment_scan', { p_assignment_id: state.openAssignmentId, p_roll_no: student.roll_no });
+    buzz(60);
+    assignmentSessionResolved.add(key);
+    if (viaCamera){
+      if (!state._assignmentRecords) state._assignmentRecords = [];
+      state._assignmentRecords.unshift({ id:'local-'+Date.now(), assignment_id: state.openAssignmentId, student_id: student.id, recorded_by_name: state.user.name, created_at: new Date().toISOString(), students:{ roll_no: student.roll_no, name: student.name } });
+      assignmentSessionCount++;
+      const counterEl = document.getElementById('asn-session-counter'); if (counterEl) counterEl.textContent = assignmentSessionCount;
+      showAsnFeedback('success', student.name);
+    } else {
+      toast(`✓ ${student.name} recorded.`,'success');
+      loadAssignmentRecords(state.openAssignmentId).then(list=>{ state._assignmentRecords=list; update(); });
+    }
+  }catch(e){
+    buzz([30,30,30]);
+    if (/already been recorded/i.test(e.message||'')) assignmentSessionResolved.add(key);
+    else assignmentErrorCooldown[key] = Date.now();
+    if (viaCamera) showAsnFeedback('error', e.message); else toast(e.message,'error');
+  }
+}
+let asnFeedbackTimer = null;
+function showAsnFeedback(type, text){
+  const holder = document.getElementById('asn-feedback-holder');
+  if (!holder) return;
+  holder.className = 'scan-feedback ' + (type==='success' ? 'scan-feedback-ok' : 'scan-feedback-err');
+  holder.innerHTML = `<div class="scan-feedback-icon">${type==='success'?'✓':'✕'}</div><div class="scan-feedback-text">${esc(text)}</div>`;
+  holder.style.display = 'flex';
+  if (asnFeedbackTimer) clearTimeout(asnFeedbackTimer);
+  asnFeedbackTimer = setTimeout(()=>{ holder.style.display='none'; holder.innerHTML=''; }, 650);
+}
 function setAttDate(d){
   state.attDate = d || localDateStr();
   loadAttendanceForDate(state.attDate).then(list=>{ state._attendanceList=list; update(); });
@@ -2640,6 +2769,7 @@ function renderAccountRow(a){
       <label><input type="checkbox" ${perms.view_all_transactions?'checked':''} onchange="updatePermission('${escAttr(a.id)}','view_all_transactions',this.checked)" /> View all of a student's transactions</label>
       <label><input type="checkbox" ${perms.view_recycle_bin?'checked':''} onchange="updatePermission('${escAttr(a.id)}','view_recycle_bin',this.checked)" /> View recycle bin</label>
       <label><input type="checkbox" ${perms.edit_student?'checked':''} onchange="updatePermission('${escAttr(a.id)}','edit_student',this.checked)" /> Edit student details</label>
+      <label><input type="checkbox" ${perms.manage_assignments?'checked':''} onchange="updatePermission('${escAttr(a.id)}','manage_assignments',this.checked)" /> Manage assignments</label>
     </div>` : '<span class="muted">—</span>'}</td>
     <td data-label="Status">${a.active!==false? '<span class="text-paid">Active</span>' : '<span class="text-due">Disabled</span>'}</td>
     <td data-label="" class="row-actions">${!isSelf? `<button class="icon-btn ${a.active!==false?'icon-danger':''}" onclick="toggleAccountActive('${escAttr(a.id)}', ${a.active!==false})">${a.active!==false?'Disable':'Enable'}</button>` : '<span class="muted">You</span>'}</td>
@@ -2716,6 +2846,7 @@ function renderAccountantShell(){
     <div class="acc-tabs">
       <button class="tab-btn ${state.accTab==='scan'?'active':''}" onclick="setAccTab('scan')">Scan</button>
       <button class="tab-btn ${state.accTab==='attendance'?'active':''}" onclick="setAccTab('attendance')">Attendance</button>
+      ${canDo('manage_assignments')? `<button class="tab-btn ${state.accTab==='assignments'?'active':''}" onclick="setAccTab('assignments')">Assignments</button>` : ''}
       <button class="tab-btn ${state.accTab==='students'?'active':''}" onclick="setAccTab('students')">Students</button>
       <button class="tab-btn ${state.accTab==='leaves'?'active':''}" onclick="setAccTab('leaves')">Leaves</button>
       <button class="tab-btn ${state.accTab==='myactivity'?'active':''}" onclick="setAccTab('myactivity')">My activity</button>
@@ -2723,6 +2854,7 @@ function renderAccountantShell(){
     <main class="main acc-main">${
       state.accTab==='scan'?renderScanTab():
       state.accTab==='attendance'?renderAttendanceTab():
+      state.accTab==='assignments'?renderAssignmentsTab():
       state.accTab==='students'?renderStudentsTab():
       state.accTab==='leaves'?renderLeavesTab():
       renderMyActivityTab()
@@ -2779,6 +2911,16 @@ function handleScanSuccess(decodedText){
     markAttendance(decodedText, key).finally(()=>{ attendancePending.delete(key); });
     return; // keep the camera running for the next student
   }
+  if (mode==='assignment'){
+    const key = state.openAssignmentId + ':' + decodedText.trim().toLowerCase();
+    if (assignmentSessionResolved.has(key)) return;
+    if (assignmentPending.has(key)) return;
+    const lastErr = assignmentErrorCooldown[key];
+    if (lastErr && (Date.now()-lastErr) < 15000) return;
+    assignmentPending.add(key);
+    recordAssignmentScan(decodedText, key).finally(()=>{ assignmentPending.delete(key); });
+    return; // keep the camera running for the next student
+  }
   stopCamera(); state.scanning=false;
   if (mode==='gate') gateLookup(decodedText);
   else scanLookup(decodedText);
@@ -2788,6 +2930,7 @@ function submitManualLookup(){
   const mode = currentScanMode();
   if (mode==='gate') gateLookup(val);
   else if (mode==='attendance') markAttendance(val);
+  else if (mode==='assignment') recordAssignmentScan(val);
   else scanLookup(val);
 }
 async function scanLookup(code){
@@ -3018,6 +3161,7 @@ function renderModal(){
     case 'rowDetail': return rowDetailModalHTML(state.modal);
     case 'markFullPaid': return markFullPaidModalHTML(state.modal);
     case 'logHistoricalPayment': return logHistoricalPaymentModalHTML(state.modal);
+    case 'newAssignment': return newAssignmentModalHTML();
     case 'missingPaymentCheck': return missingPaymentCheckModalHTML(state.modal);
     case 'logoUpload': return logoUploadModalHTML(state.modal);
     case 'changepw': return changePasswordModalHTML();
