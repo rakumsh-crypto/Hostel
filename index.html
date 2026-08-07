@@ -202,6 +202,7 @@ a{color:var(--primary);}
 .badge-payment_backfill{background:var(--green-soft); color:var(--green);}
 .badge-attendance{background:#E3ECF9; color:#3D6B9C;}
 .badge-assignment_created,.badge-assignment_recorded{background:var(--primary-soft); color:var(--primary-dark);}
+.badge-device_revoked{background:var(--red-soft); color:var(--red);}
 .badge-approved{background:var(--amber-soft); color:var(--amber);}
 .badge-out{background:#FDECEA; color:var(--red);}
 .badge-completed{background:var(--green-soft); color:var(--green);}
@@ -360,7 +361,6 @@ a{color:var(--primary);}
    ============================================================ */
 const HARDCODED_SUPABASE_URL = 'https://dthsknsixkyyrkvfvtzi.supabase.co';
 const HARDCODED_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0aHNrbnNpeGt5eXJrdmZ2dHppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNjUyMDcsImV4cCI6MjA5Nzg0MTIwN30.gPmmlpdlxVc-FI7FrcBmkEPCE-ASS6-2Y-9_Q3mPpYA';
-
 /* ============================================================
    STATE
    ============================================================ */
@@ -634,12 +634,12 @@ function activityLabel(t){
     leave_granted:'Leave granted', leave_out:'Marked out', leave_in:'Marked in', leave_revoked:'Leave revoked',
     role_change:'Role changed', permission_change:'Permission changed', account_status_change:'Account status changed',
     payment_backfill:'Historical payment logged', attendance:'Attendance marked',
-    assignment_created:'Assignment created', assignment_recorded:'Assignment recorded' };
+    assignment_created:'Assignment created', assignment_recorded:'Assignment recorded', device_revoked:'Device revoked' };
   return map[t]||t;
 }
 function capitalizeTab(t){
   const map={ dashboard:'Dashboard', students:'Students', leaves:'Leaves', transactions:'Transactions', staff:'Staff',
-    requests:'Login Requests', activity:'Activity Log', scan:'Scan', myactivity:'My Activity', gate:'Gate', roster:'Leave Roster' };
+    requests:'Login Requests', devices:'Devices', activity:'Activity Log', scan:'Scan', myactivity:'My Activity', gate:'Gate', roster:'Leave Roster' };
   return map[t]||t;
 }
 let cachedLogoImg = null;
@@ -725,9 +725,9 @@ async function getCachedPhotoUrl(photoPath){
   const cached = photoUrlCache[photoPath];
   if (cached && cached.expiresAt > Date.now()) return cached.url;
   if (photoFetchInFlight[photoPath]) return photoFetchInFlight[photoPath];
-  const p = sbSignedUrl('student-photos', photoPath, 900).then(url=>{
+  const p = sbSignedUrl('student-photos', photoPath, 21600).then(url=>{ // 6 hours
     delete photoFetchInFlight[photoPath];
-    if (url) photoUrlCache[photoPath] = { url, expiresAt: Date.now() + 800*1000 }; // cache slightly under the actual 900s signed-URL validity
+    if (url) photoUrlCache[photoPath] = { url, expiresAt: Date.now() + 21000*1000 }; // cache slightly under the actual signed-URL validity
     return url;
   }).catch(()=>{ delete photoFetchInFlight[photoPath]; return null; });
   photoFetchInFlight[photoPath] = p;
@@ -863,6 +863,7 @@ async function attemptLogin(){
       await loadAllForRole();
       update();
       startInactivityWatch();
+      startDeviceHeartbeat();
     } else {
       const already = await sbSelect('login_requests', `?user_id=eq.${state.user.id}&device_id=eq.${DEVICE_ID}&status=eq.approved&select=id&limit=1`).catch(()=>[]);
       if (already && already.length){
@@ -871,6 +872,7 @@ async function attemptLogin(){
         await loadAllForRole();
         update();
         startInactivityWatch();
+        startDeviceHeartbeat();
       } else {
         await requestLoginApproval();
         state.view='waiting-approval';
@@ -901,6 +903,7 @@ function startApprovalPolling(){
         await loadAllForRole();
         update();
         startInactivityWatch();
+        startDeviceHeartbeat();
       } else if (status==='denied'){
         clearInterval(approvalPollInterval); approvalPollInterval=null;
         await clearSession(); state.user=null; state.view='login';
@@ -916,7 +919,7 @@ async function loadMyProfile(){
   if (!profile || profile.active===false) throw new Error('inactive');
   state.user = { id: profile.id, email: profile.email, name: profile.name||profile.email, role: profile.role, permissions: profile.permissions||{} };
 }
-function logout(){ stopCamera(); if (approvalPollInterval){ clearInterval(approvalPollInterval); approvalPollInterval=null; } stopInactivityWatch(); clearSession(); state.user=null; state.view='login'; state.scanResult=null; state.gateResult=null; state.scanning=false; update(); }
+function logout(){ stopCamera(); if (approvalPollInterval){ clearInterval(approvalPollInterval); approvalPollInterval=null; } stopInactivityWatch(); stopDeviceHeartbeat(); clearSession(); state.user=null; state.view='login'; state.scanResult=null; state.gateResult=null; state.scanning=false; update(); }
 
 /* ============================================================
    INACTIVITY AUTO-LOGOUT
@@ -932,6 +935,41 @@ let lastActivityAt = Date.now();
 let inactivityInterval = null;
 let inactivityWarned = false;
 function markActivity(){ lastActivityAt = Date.now(); inactivityWarned = false; }
+let heartbeatInterval = null;
+function startDeviceHeartbeat(){
+  if (heartbeatInterval || !state.user || state.user.role==='admin') return; // admin never goes through device approval, nothing to track
+  const ping = async ()=>{
+    try{
+      const status = await sbRpc('touch_device_heartbeat', {});
+      if (status === 'denied'){
+        clearInterval(heartbeatInterval); heartbeatInterval = null;
+        toast('Access for this device was revoked by an admin.','error');
+        logout();
+      }
+    }catch(e){}
+  };
+  ping();
+  heartbeatInterval = setInterval(ping, 3*60*1000);
+}
+function stopDeviceHeartbeat(){ if (heartbeatInterval){ clearInterval(heartbeatInterval); heartbeatInterval=null; } }
+function friendlyDeviceLabel(ua){
+  if (!ua) return 'Unknown device';
+  const isTablet = /iPad|Tablet/i.test(ua);
+  let os = 'Unknown OS';
+  if (/Android/i.test(ua)) os = 'Android';
+  else if (/iPhone/i.test(ua)) os = 'iPhone';
+  else if (/iPad/i.test(ua)) os = 'iPad';
+  else if (/Windows/i.test(ua)) os = 'Windows';
+  else if (/Mac OS X/i.test(ua)) os = 'Mac';
+  else if (/Linux/i.test(ua)) os = 'Linux';
+  let browser = '';
+  if (/Edg\//i.test(ua)) browser = 'Edge';
+  else if (/Chrome\//i.test(ua)) browser = 'Chrome';
+  else if (/CriOS/i.test(ua)) browser = 'Chrome';
+  else if (/Firefox\//i.test(ua)) browser = 'Firefox';
+  else if (/Safari\//i.test(ua) && !/Chrome/i.test(ua)) browser = 'Safari';
+  return browser ? `${os} · ${browser}${isTablet?' (tablet)':''}` : os;
+}
 function startInactivityWatch(){
   if (inactivityInterval) return;
   lastActivityAt = Date.now(); inactivityWarned = false;
@@ -996,6 +1034,24 @@ async function loadStudents(){
   catch(e){ toast('Could not load students: '+e.message,'error'); state.students=[]; }
 }
 async function loadProfiles(){ try{ state.accounts = await sbSelect('profiles','?select=*&order=created_at.asc'); }catch(e){ state.accounts=[]; } }
+async function refreshOneStudent(rollNo){
+  // Patches just the one changed row into state.students in place, instead of
+  // re-fetching the entire table (every column, every student, no limit) —
+  // that full-table pattern is what was driving egress usage far out of
+  // proportion to the actual database size.
+  if (!rollNo) return;
+  try{
+    const rows = await sbSelect('students', `?roll_no=eq.${encodeURIComponent(rollNo)}&select=*&limit=1`);
+    const fresh = rows && rows[0];
+    if (!fresh) return; // e.g. archived/purged since — a full loadStudents() elsewhere will reconcile the list view
+    const idx = state.students.findIndex(s=>s.id===fresh.id);
+    if (idx!==-1) state.students[idx] = fresh; else state.students.unshift(fresh);
+  }catch(e){ /* non-fatal — the on-screen data just stays one action stale until the next full load */ }
+}
+function removeStudentFromState(rollNo){
+  const idx = state.students.findIndex(s=>s.roll_no.toLowerCase()===String(rollNo).toLowerCase());
+  if (idx!==-1) state.students.splice(idx,1);
+}
 async function loadActivity(){ try{ state.activity = await sbSelect('activity_log','?select=*&order=created_at.desc&limit=400'); }catch(e){ state.activity=[]; } }
 async function loadPaymentsFor(studentId){ try{ return await sbSelect('payments', `?student_id=eq.${studentId}&archived=eq.false&select=*&order=created_at.desc&limit=15`); }catch(e){ return []; } }
 async function loadLeaves(){ try{ state.leaves = await sbSelect('leaves', '?select=*,students(roll_no,name,room,photo_path,batch_id)&order=created_at.desc&limit=400'); }catch(e){ state.leaves=[]; } }
@@ -1039,6 +1095,7 @@ function renderAdminShell(){
       <button class="nav-item ${state.adminTab==='transactions'?'active':''}" onclick="setAdminTab('transactions')">Transactions</button>
       <button class="nav-item ${state.adminTab==='staff'?'active':''}" onclick="setAdminTab('staff')">Staff</button>
       <button class="nav-item ${state.adminTab==='requests'?'active':''}" onclick="setAdminTab('requests')">Requests ${pendingCount>0?`<span class="nav-badge">${pendingCount}</span>`:''}</button>
+      <button class="nav-item ${state.adminTab==='devices'?'active':''}" onclick="setAdminTab('devices')">Devices</button>
       <button class="nav-item ${state.adminTab==='activity'?'active':''}" onclick="setAdminTab('activity')">Activity Log</button>
     </nav>
     <div class="main-col">
@@ -1052,6 +1109,7 @@ function renderAdminShell(){
            state.adminTab==='transactions'?renderTransactionsTab():
            state.adminTab==='staff'?renderStaffTab():
            state.adminTab==='requests'?renderRequestsTab():
+           state.adminTab==='devices'?renderDevicesTab():
            renderActivityTab() }
       </main>
     </div>
@@ -1063,6 +1121,7 @@ function setAdminTab(tab){
   update();
   if (tab==='leaves') loadLeaves().then(update);
   if (tab==='requests') loadLoginRequests().then(update);
+  if (tab==='devices') loadStaffDevices().then(update);
   if (tab==='attendance'){ if (!state.attDate) state.attDate = localDateStr(); loadAttendanceForDate(state.attDate).then(list=>{ state._attendanceList=list; update(); }); }
 }
 
@@ -1602,7 +1661,7 @@ async function actuallySubmitStudent({ rollNo, name, payload, originalRollNo, ph
         catch(payErr){ toast('Student added, but the initial payment could not be recorded: '+payErr.message, 'error'); }
       }
       await sbInsert('activity_log', { type:'student_add', roll_no: rollNo, details:`${name} (${rollNo})`, by_name: state.user.name });
-      await Promise.all([loadStudents(), loadActivity()]);
+      await Promise.all([refreshOneStudent(rollNo), loadActivity()]);
       // Continuous add mode: reset to a fresh blank form instead of closing,
       // so many students can be added in a row without reopening the modal each time.
       state.modal = { type:'studentForm', existing:null, originalRollNo:null, contacts:[{label:'Student',phone:''},{label:'Guardian',phone:''}] };
@@ -1616,15 +1675,36 @@ async function actuallySubmitStudent({ rollNo, name, payload, originalRollNo, ph
       await sbUpdate('students', `?id=eq.${row.id}`, patch);
       await sbInsert('activity_log', { type:'student_edit', roll_no: rollNo, details:`${name} (${rollNo})`, by_name: state.user.name });
       closeModal();
-      await Promise.all([loadStudents(), loadActivity()]);
+      await Promise.all([refreshOneStudent(rollNo), loadActivity()]);
       update();
       toast('Student updated.','success');
     }
   }catch(e){ toast(e.message,'error'); if (btn){ btn.disabled=false; btn.textContent = originalRollNo?'Save changes':'Add student'; } }
 }
+function resizeImageForUpload(file){
+  return new Promise((resolve)=>{
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      const img = new Image();
+      img.onload = ()=>{
+        const maxDim = 500;
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const w = Math.round(img.width*scale), h = Math.round(img.height*scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        canvas.toBlob(blob=>{ resolve(blob || file); }, 'image/jpeg', 0.82);
+      };
+      img.onerror = ()=> resolve(file); // fall back to the original file if it can't be decoded as an image
+      img.src = e.target.result;
+    };
+    reader.onerror = ()=> resolve(file);
+    reader.readAsDataURL(file);
+  });
+}
 async function uploadStudentPhoto(studentId, file){
-  const ext = ((file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')) || 'jpg';
-  return await sbUploadFile('student-photos', `${studentId}.${ext}`, file);
+  const resized = await resizeImageForUpload(file);
+  return await sbUploadFile('student-photos', `${studentId}.jpg`, resized);
 }
 
 /* ============================================================
@@ -1660,7 +1740,8 @@ async function submitArchive(rollNo){
     await sbInsert('activity_log', { type:'student_archive', roll_no: rollNo, details:`${row.name} — ${reason}${note?': '+note:''}`, by_name: state.user.name });
     closeModal();
     toast('Moved to recycle bin.','success');
-    await Promise.all([loadStudents(), loadActivity()]);
+    removeStudentFromState(rollNo);
+    await loadActivity();
   }catch(e){ toast(e.message,'error'); }
   update();
 }
@@ -1669,7 +1750,8 @@ function restoreStudent(rollNo){
     try{
       await sbRpc('restore_student', { p_roll_no: rollNo });
       toast('Student restored.','success');
-      await Promise.all([loadStudents(), loadActivity()]);
+      removeStudentFromState(rollNo);
+      await loadActivity();
     }catch(e){ toast(e.message,'error'); }
     update();
   });
@@ -1681,7 +1763,8 @@ function purgeStudent(rollNo){
       await sbDelete('students', `?id=eq.${row.id}`);
       await sbInsert('activity_log', { type:'student_purge', roll_no: rollNo, details:`Permanently deleted ${rollNo}`, by_name: state.user.name });
       toast('Student permanently deleted.','success');
-      await Promise.all([loadStudents(), loadActivity()]);
+      removeStudentFromState(rollNo);
+      await loadActivity();
     }catch(e){ toast(e.message,'error'); }
     update();
   });
@@ -2302,7 +2385,7 @@ async function recordAssignmentScan(code, sessionKey){
   const viaCamera = state.scanning;
   try{
     let rows = state.students.filter(s=>s.roll_no.toLowerCase()===normalized.toLowerCase());
-    if (!rows.length){ await loadStudents(); rows = state.students.filter(s=>s.roll_no.toLowerCase()===normalized.toLowerCase()); }
+    if (!rows.length){ await refreshOneStudent(normalized); rows = state.students.filter(s=>s.roll_no.toLowerCase()===normalized.toLowerCase()); }
     if (!rows.length){
       buzz([30,30,30]); assignmentErrorCooldown[key]=Date.now();
       if (viaCamera) showAsnFeedback('error', `No match: ${normalized}`); else toast(`No student matches code "${normalized}".`,'error');
@@ -2361,7 +2444,7 @@ async function markAttendance(code, sessionKey){
   const viaCamera = state.scanning;
   try{
     let rows = state.students.filter(s=>s.roll_no.toLowerCase()===normalized.toLowerCase());
-    if (!rows.length){ await loadStudents(); rows = state.students.filter(s=>s.roll_no.toLowerCase()===normalized.toLowerCase()); }
+    if (!rows.length){ await refreshOneStudent(normalized); rows = state.students.filter(s=>s.roll_no.toLowerCase()===normalized.toLowerCase()); }
     if (!rows.length){
       buzz([30,30,30]);
       attendanceErrorCooldown[key] = Date.now();
@@ -2505,7 +2588,7 @@ async function submitEditPayment(id){
     await sbRpc('edit_payment', { p_payment_id:id, p_new_amount:amount, p_new_note:note, p_new_method:method, p_new_uid:uid, p_new_bank:bank });
     toast('Transaction updated.','success');
     state._allPayments=null; state._myPayments=null;
-    await loadStudents();
+    if (returnTo) await refreshOneStudent(returnTo); else await loadStudents();
     if (returnTo){ openStudentProfile(returnTo); } else { closeModal(); }
   }catch(e){ toast(e.message,'error'); if (btn){ btn.disabled=false; btn.textContent='Save changes'; } }
 }
@@ -2561,7 +2644,7 @@ async function submitLogHistoricalPayment(rollNo){
     await sbRpc('log_historical_payment', { p_roll_no:rollNo, p_amount:amount, p_method:method, p_uid:uid, p_bank:bank, p_note:note, p_occurred_at:occurredAt, p_affects_balance:affectsBalance });
     toast('Historical payment logged.','success');
     state._allPayments=null; state._myPayments=null;
-    await loadStudents();
+    await refreshOneStudent(rollNo);
     await loadActivity();
     openStudentProfile(rollNo);
   }catch(e){ toast(e.message,'error'); if (btn){ btn.disabled=false; btn.textContent='Log payment'; } }
@@ -2594,10 +2677,13 @@ function archivePaymentAction(id, source){
   const returnTo = (source==='profile' && state.modal) ? state.modal.student.roll_no : null;
   confirmAction("Move this transaction to the recycle bin? The amount will be subtracted from the student's paid total.", async ()=>{
     try{
+      const list = source==='all' ? (state._allPayments||[]) : (state._myPayments||[]);
+      const found = list.find(x=>x.id===id);
+      const affectedRoll = returnTo || (found && found.students && found.students.roll_no) || null;
       await sbRpc('archive_payment', { p_payment_id:id });
       toast('Transaction moved to recycle bin.','success');
       state._allPayments=null; state._myPayments=null;
-      await loadStudents();
+      if (affectedRoll) await refreshOneStudent(affectedRoll); else await loadStudents();
       if (returnTo) openStudentProfile(returnTo); else update();
     }catch(e){ toast(e.message,'error'); update(); }
   });
@@ -2606,10 +2692,13 @@ function restorePaymentAction(id, source){
   const returnTo = (source==='profile' && state.modal) ? state.modal.student.roll_no : null;
   confirmAction("Restore this transaction? The amount will be added back to the student's paid total.", async ()=>{
     try{
+      const list = source==='all' ? (state._allPayments||[]) : (state._myPayments||[]);
+      const found = list.find(x=>x.id===id);
+      const affectedRoll = returnTo || (found && found.students && found.students.roll_no) || null;
       await sbRpc('restore_payment', { p_payment_id:id });
       toast('Transaction restored.','success');
       state._allPayments=null; state._myPayments=null;
-      await loadStudents();
+      if (affectedRoll) await refreshOneStudent(affectedRoll); else await loadStudents();
       if (returnTo) openStudentProfile(returnTo); else update();
     }catch(e){ toast(e.message,'error'); update(); }
   });
@@ -2743,7 +2832,7 @@ function convertToOnetimeMode(rollNo, onetimeAmount){
       await sbUpdate('students', `?id=eq.${row.id}`, { fee_mode:'onetime', fee_total:onetimeAmount });
       await sbInsert('activity_log', { type:'student_edit', roll_no: rollNo, details:`${row.name} switched from monthly to one-time mode (₹${onetimeAmount})`, by_name: state.user.name });
       toast('Switched to One-time mode.','success');
-      await Promise.all([loadStudents(), loadActivity()]);
+      await Promise.all([refreshOneStudent(rollNo), loadActivity()]);
       openStudentProfile(rollNo);
     }catch(e){ toast(e.message,'error'); }
     update();
@@ -2871,6 +2960,37 @@ async function decideLoginRequest(id, status){
   catch(e){ toast(e.message,'error'); }
   update();
 }
+async function loadStaffDevices(){ try{ state._staffDevices = await sbRpc('list_staff_devices', {}); }catch(e){ state._staffDevices=[]; } }
+function renderDevicesTab(){
+  if (!state._staffDevices){ return `<div class="card"><p class="empty-hint">Loading…</p></div>`; }
+  const rows = state._staffDevices;
+  const ONLINE_WINDOW_MS = 5*60*1000; // matches the 3-minute heartbeat interval with a little slack
+  return `<div class="toolbar"><p class="muted" style="margin:0;">One row per device each staff member has logged in from. A green dot means that device pinged in within the last 5 minutes.</p><div class="toolbar-actions"><button class="btn btn-secondary" onclick="state._staffDevices=null; loadStaffDevices().then(update);">Refresh</button></div></div>
+  <div class="card no-pad"><table class="table"><thead><tr><th></th><th>Staff</th><th>Device</th><th>Status</th><th>Requested</th><th>Last active</th><th></th></tr></thead>
+    <tbody>${rows.length? rows.map(r=>{
+      const isOnline = r.status==='approved' && r.last_seen_at && (Date.now()-new Date(r.last_seen_at).getTime())<ONLINE_WINDOW_MS;
+      return `<tr>
+        <td data-label=""><span title="${isOnline?'Active now':'Not currently active'}" style="display:inline-block; width:9px; height:9px; border-radius:50%; background:${isOnline?'var(--green)':'var(--border)'};"></span></td>
+        <td data-label="Staff">${esc(r.staff_name)} <span class="mono muted">${esc(r.staff_email||'')}</span></td>
+        <td data-label="Device" class="muted">${esc(friendlyDeviceLabel(r.device_info))}</td>
+        <td data-label="Status"><span class="badge badge-${r.status==='approved'?'student_restore':'student_archive'}">${esc(r.status)}</span></td>
+        <td data-label="Requested" class="muted">${fmtTime(r.requested_at)}</td>
+        <td data-label="Last active" class="muted">${r.last_seen_at? fmtTime(r.last_seen_at) : '—'}</td>
+        <td data-label="">${r.status==='approved'? `<button class="icon-btn icon-danger" onclick="revokeStaffDevice('${escAttr(r.user_id)}','${escAttr(r.device_id)}','${escAttr(r.staff_name)}')">Revoke</button>` : ''}</td>
+      </tr>`;
+    }).join('') : `<tr><td colspan="7" class="empty-hint">No devices tracked yet — this fills in as staff log in.</td></tr>`}</tbody></table></div>`;
+}
+function revokeStaffDevice(userId, deviceId, staffName){
+  confirmAction(`Revoke this device for ${staffName}? It will be signed out and need a fresh approval to use again — their other devices are unaffected.`, async ()=>{
+    try{
+      await sbRpc('revoke_device', { p_user_id:userId, p_device_id:deviceId });
+      toast('Device revoked.','success');
+      state._staffDevices=null;
+      await loadStaffDevices();
+    }catch(e){ toast(e.message,'error'); }
+    update();
+  });
+}
 
 /* ============================================================
    ACCOUNTANT SHELL
@@ -2971,7 +3091,7 @@ async function scanLookup(code){
   const normalized = String(code).trim();
   try{
     let rows = state.students.filter(s=>s.roll_no.toLowerCase()===normalized.toLowerCase());
-    if (!rows.length){ await loadStudents(); rows = state.students.filter(s=>s.roll_no.toLowerCase()===normalized.toLowerCase()); }
+    if (!rows.length){ await refreshOneStudent(normalized); rows = state.students.filter(s=>s.roll_no.toLowerCase()===normalized.toLowerCase()); }
     if (rows.length){
       buzz(60);
       sbRpc('log_scan', { p_roll_no: rows[0].roll_no, p_student_name: rows[0].name }).then(()=>loadActivity()).catch(()=>{});
@@ -3038,7 +3158,7 @@ async function actuallyRecordPayment(rollNo, amount, method, uid, bank, note){
     await sbRpc('record_payment', { p_roll_no: rollNo, p_amount: amount, p_note: note, p_method: method, p_uid: uid, p_bank: bank });
     closeModal();
     state._myPayments=null; state._allPayments=null;
-    await loadStudents();
+    await refreshOneStudent(rollNo);
     await loadActivity();
     const updated = state.students.find(s=>s.roll_no.toLowerCase()===rollNo.toLowerCase());
     const nowDue = updated ? Math.max(0,(updated.fee_total||0)-(updated.fee_paid||0)) : null;
@@ -3073,7 +3193,7 @@ async function submitMarkFullPaid(rollNo){
     buzz([50,40,50,40,80]);
     toast('Marked fully paid — remaining due converted to discount. 🎉','success');
     state._myPayments=null; state._allPayments=null;
-    await loadStudents();
+    await refreshOneStudent(rollNo);
     await loadActivity();
     openStudentProfile(rollNo);
   }catch(e){ toast(e.message,'error'); if (btn){ btn.disabled=false; btn.textContent='Mark fully paid'; } }
@@ -3239,6 +3359,7 @@ async function init(){
       state.view='app';
       await loadAllForRole();
       startInactivityWatch();
+      startDeviceHeartbeat();
     }catch(e){ await clearSession(); state.view='login'; }
   } else { state.view='login'; }
   update();
