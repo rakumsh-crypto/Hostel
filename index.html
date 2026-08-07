@@ -361,6 +361,7 @@ a{color:var(--primary);}
    ============================================================ */
 const HARDCODED_SUPABASE_URL = 'https://dthsknsixkyyrkvfvtzi.supabase.co';
 const HARDCODED_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0aHNrbnNpeGt5eXJrdmZ2dHppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNjUyMDcsImV4cCI6MjA5Nzg0MTIwN30.gPmmlpdlxVc-FI7FrcBmkEPCE-ASS6-2Y-9_Q3mPpYA';
+
 /* ============================================================
    STATE
    ============================================================ */
@@ -944,6 +945,14 @@ function startDeviceHeartbeat(){
       if (status === 'denied'){
         clearInterval(heartbeatInterval); heartbeatInterval = null;
         toast('Access for this device was revoked by an admin.','error');
+        logout();
+      } else if (!status){
+        // No device-specific approval on record at all for this session — most likely this
+        // account's old approval predates device-tracking. Sign out cleanly so the normal
+        // login flow can request fresh approval for this device, rather than leaving the
+        // person looking at silently broken/empty screens for the rest of the session.
+        clearInterval(heartbeatInterval); heartbeatInterval = null;
+        toast('Please log in again to approve this device.','error');
         logout();
       }
     }catch(e){}
