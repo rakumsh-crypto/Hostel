@@ -1313,7 +1313,7 @@ function renderStudentsTab(){
       </div>` : ''}
       ${isAdmin? `<button class="btn btn-secondary" onclick="openBatchesModal()">Batches</button>` : ''}
       ${isAdmin && state.studentsView==='active'? `<button class="btn btn-secondary" onclick="openBulkImport()">Bulk import</button>` : ''}
-      ${isAdmin? `<button class="btn btn-secondary" onclick="exportCSV()">Export ${state.studentsView==='recycle'?'recycle bin':''}</button>` : ''}
+      ${isAdmin? `<button class="btn btn-secondary" onclick="exportCSV(); if(state.studentsView!=='recycle') exportPaymentsCSV();">Export ${state.studentsView==='recycle'?'recycle bin':'(+ payments)'}</button>` : ''}
       ${state.studentsView==='active' && canAdd? `<button class="btn btn-primary" onclick="openStudentForm(null)">Add student</button>` : ''}
     </div>
   </div>
@@ -2131,6 +2131,18 @@ function exportCSV(){
     return base.map(csvEscape).join(',');
   });
   downloadTextFile([header,...rows].join('\n'), isRecycle?'hostel-recycle-bin-export.csv':'hostel-students-backup.csv', 'text/csv');
+}
+async function exportPaymentsCSV(){
+  toast('Preparing payment export…','success');
+  let rows;
+  try{ rows = await sbSelect('payments', '?archived=eq.false&select=*,students(roll_no,name)&order=created_at.asc'); }
+  catch(e){ toast('Could not load payments: '+e.message,'error'); return; }
+  const header = 'RollNo,Name,TxnID,Date,Amount,Method,Bank,TransactionUID,RecordedBy,Note';
+  const csvRows = rows.map(p=>{
+    const stu = p.students||{};
+    return [stu.roll_no||'', stu.name||'', p.txn_ref||'', fmtTime(p.created_at), p.amount, p.payment_method||'cash', p.bank_name||'', p.transaction_uid||'', p.recorded_by_name||'', p.note||''].map(csvEscape).join(',');
+  });
+  downloadTextFile([header,...csvRows].join('\n'), 'hostel-payments-export.csv', 'text/csv');
 }
 
 /* ============================================================
