@@ -342,33 +342,31 @@ a{color:var(--primary);}
 .id-card-face{width:var(--idcard-w); min-width:var(--idcard-w); height:var(--idcard-h); background:#fff; color:#111827; border:1px solid #0F172A; border-radius:3.2mm; overflow:hidden; font-family:var(--font-body); box-shadow:0 2px 10px rgba(15,23,42,.08); position:relative;}
 .id-card-front{background:linear-gradient(180deg,#ffffff 0%, #fbfdff 100%);}
 .id-card-back{background:#ffffff;}
-.id-front-topbar{height:6.8mm; background:linear-gradient(90deg,#0B57D0 0%, #1D4ED8 70%, #6AA6FF 100%);}
-.id-front-header{display:grid; grid-template-columns:16mm 1fr 14mm; gap:2.8mm; align-items:center; padding:2.4mm 3mm 1.8mm;}
-.id-brand-logo{width:13.5mm; height:13.5mm; border-radius:50%; border:.3mm solid #CFD7E6; display:flex; align-items:center; justify-content:center; overflow:hidden; background:#fff; color:#1D4ED8; font-weight:800; font-size:11px;}
-.id-brand-logo img{width:100%; height:100%; object-fit:contain; display:block;}
-.id-brand-block{min-width:0;}
-.id-brand-title{font-size:4.3mm; font-weight:800; line-height:1.05; color:#0F172A; letter-spacing:.01em;}
-.id-brand-address{font-size:2.4mm; line-height:1.25; color:#475467; margin-top:.6mm;}
-.id-card-badge{justify-self:end; align-self:start; background:#EEF4FF; color:#1D4ED8; border:.3mm solid #CFE0FF; border-radius:999px; padding:1mm 1.8mm; font-size:2.2mm; font-weight:700; letter-spacing:.08em;}
-.id-front-main{display:grid; grid-template-columns:19mm 1fr 21mm; gap:2.8mm; align-items:start; padding:0 3mm 2.2mm;}
-.id-photo{width:17.5mm; height:21.5mm; border-radius:1.2mm; border:.35mm solid #CBD5E1; background:#E8EEF8; display:flex; align-items:center; justify-content:center; overflow:hidden; color:#24324A; font-weight:800; font-size:7mm; text-align:center;}
+.id-card-top{height:16.7mm;box-sizing:border-box;display:grid;grid-template-columns:12.7mm minmax(0,1fr);column-gap:2.5mm;align-items:center;background:linear-gradient(95deg,#153C87,#1E5FC9);border-top:2mm solid #0F2552;padding:1mm 3mm 1.5mm;color:#fff;overflow:hidden;}
+.id-brand-logo{width:11.7mm;height:11.7mm;border-radius:50%;border:.35mm solid rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff;color:#1D4ED8;font-size:10px;font-weight:800;}
+.id-brand-logo img{width:100%;height:100%;object-fit:contain;display:block;}
+.id-brand-block{min-width:0;overflow:hidden;}
+.id-brand-title{font-size:3.9mm;font-weight:800;line-height:1.18;letter-spacing:.01em;color:#fff;}
+.id-brand-address{font-size:2.05mm;line-height:1.18;color:rgba(255,255,255,.95);margin-top:.45mm;overflow-wrap:anywhere;}
+.id-brand-contact{font-size:2.05mm;line-height:1.18;color:rgba(255,255,255,.95);margin-top:.25mm;}
+.id-front-main{display:grid; grid-template-columns:19mm minmax(0,1fr) 19mm;gap:2.1mm;align-items:start;padding:2.2mm 2.5mm 2mm;}
+.id-photo{width:17.5mm; height:22mm; border-radius:1.2mm; border:.35mm solid #CBD5E1; background:#E8EEF8; display:flex; align-items:center; justify-content:center; overflow:hidden; color:#24324A; font-weight:800; font-size:7mm; text-align:center;}
 .id-photo img{width:100%; height:100%; object-fit:cover; display:block;}
 .id-front-content{display:flex; flex-direction:column; min-width:0; padding-top:.6mm;}
 .id-student-name{font-size:3.9mm; font-weight:800; color:#111827; line-height:1.12; margin-bottom:1.6mm; word-break:break-word;}
-.id-detail-grid{display:grid; grid-template-columns:15mm 1fr; row-gap:1.15mm; column-gap:1.6mm; align-items:start;}
+.id-detail-grid{display:grid; grid-template-columns:14mm minmax(0,1fr);row-gap:1.1mm;column-gap:1.3mm; align-items:start;}
 .id-detail-label{font-size:2.45mm; font-weight:800; color:#334155;}
-.id-detail-value{font-size:2.6mm; color:#111827; line-height:1.25; word-break:break-word;}
-.id-batch-box{display:inline-block; padding:.45mm 1.2mm; border-radius:1.1mm; border:.3mm solid #CFE0FF; background:#EFF6FF; color:#1D4ED8; font-weight:700; font-size:2.35mm; max-width:100%;}
+.id-detail-value{font-size:2.55mm;color:#111827;line-height:1.22;overflow-wrap:anywhere;}
+.id-batch-box{display:inline-block; padding:.45mm 1.2mm; border-radius:1.1mm; border:.3mm solid #CFE0FF; background:#EFF6FF; color:#1D4ED8; font-weight:700; font-size:2.25mm;max-width:100%;white-space:normal;overflow-wrap:anywhere;}
+.id-batch-full{grid-column:1 / -1;}
+.id-batch-full .id-batch-box{font-size:2.10mm;line-height:1.16;}
 .id-qr-panel{display:flex; flex-direction:column; align-items:center; gap:1mm; padding-top:.4mm;}
-.id-qr{width:18mm; height:18mm; display:flex; align-items:center; justify-content:center; border:.3mm solid #D7E3F7; background:#fff; padding:.9mm; border-radius:1.1mm; overflow:hidden;}
+.id-qr{width:17.5mm;height:17.5mm; display:flex; align-items:center; justify-content:center; border:.3mm solid #D7E3F7; background:#fff; padding:.9mm; border-radius:1.1mm; overflow:hidden;}
 .id-qr canvas, .id-qr img{display:block; max-width:100%; height:auto;}
 .id-qr-caption{font-size:1.9mm; color:#475467; text-align:center; line-height:1.15;}
 .id-front-footer{position:absolute; left:0; right:0; bottom:0; display:flex; align-items:center; justify-content:space-between; gap:2mm; padding:1.5mm 3mm; background:#F8FAFC; border-top:.25mm solid #DDE4EE;}
 .id-issued-note{font-size:2.05mm; color:#667085; line-height:1.2; max-width:48mm;}
 .id-vertical-chip{position:absolute; right:1.4mm; top:20.5mm; writing-mode:vertical-rl; transform:rotate(180deg); font-size:2mm; letter-spacing:.06em; background:#334155; color:#fff; border-radius:1mm; padding:1.5mm .8mm;}
-.id-back-top{padding:2.6mm 3mm; background:linear-gradient(90deg,#0B57D0 0%, #1D4ED8 70%, #6AA6FF 100%); color:#fff;}
-.id-back-title{font-size:4mm; font-weight:800; line-height:1.05;}
-.id-back-addressline{font-size:2.3mm; line-height:1.25; opacity:.96; margin-top:.8mm;}
 .id-back-body{padding:2.8mm 3mm 2mm; display:flex; flex-direction:column; gap:1.7mm;}
 .id-back-row{display:grid; grid-template-columns:18mm 1fr; column-gap:2mm; align-items:start; border-bottom:.25mm dashed #D7DBE7; padding-bottom:1.4mm;}
 .id-back-row:last-child{border-bottom:none; padding-bottom:0;}
@@ -391,7 +389,7 @@ a{color:var(--primary);}
 .id-watermark img{width:33mm;height:33mm;object-fit:contain;}
 .id-watermark-text{font-size:8mm;font-weight:800;transform:rotate(-23deg);white-space:nowrap;}
 .id-card-face>*:not(.id-watermark){z-index:1;}
-.id-front-header,.id-front-main,.id-back-body,.id-front-topbar,.id-back-top{position:relative;}
+.id-card-top,.id-front-main,.id-back-body{position:relative;}
 .id-print-page{box-sizing:border-box;width:194mm;height:279mm;page-break-after:always;break-after:page;}
 .id-print-page:last-child{page-break-after:auto;break-after:auto;}
 .id-print-grid{display:grid;grid-template-columns:85.6mm 85.6mm;grid-template-rows:repeat(4,54mm);column-gap:7mm;row-gap:6mm;align-content:start;}
@@ -402,7 +400,7 @@ a{color:var(--primary);}
  .id-print-page{width:194mm;height:278mm;}
  .id-print-grid{gap:6mm 7mm;}
  .id-card-face{width:85.6mm;min-width:85.6mm;height:54mm;break-inside:avoid;box-shadow:none;}
- .id-front-topbar,.id-back-top,.id-front-footer,.id-back-footer{print-color-adjust:exact;-webkit-print-color-adjust:exact;}
+ .id-card-top,.id-front-footer,.id-back-footer{print-color-adjust:exact;-webkit-print-color-adjust:exact;}
 }
 
 #print-area[data-print-kind="report"]{display:none;}
@@ -463,7 +461,6 @@ const HARDCODED_SUPABASE_URL = 'https://dthsknsixkyyrkvfvtzi.supabase.co';
 const HARDCODED_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0aHNrbnNpeGt5eXJrdmZ2dHppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNjUyMDcsImV4cCI6MjA5Nzg0MTIwN30.gPmmlpdlxVc-FI7FrcBmkEPCE-ASS6-2Y-9_Q3mPpYA';
 const ID_CARD_HINDI_TITLE = 'विद्या ग्राम छात्रावास';
 const ID_CARD_DEFAULT_ADDRESS = 'Hasadih (Masaurhi) Patna';
-
 /* ============================================================
    STATE
    ============================================================ */
@@ -1341,7 +1338,14 @@ function removeStudentFromState(rollNo){
   if (idx!==-1) state.students.splice(idx,1);
 }
 async function loadActivity(){ try{ state.activity = await sbSelect('activity_log','?select=*&order=created_at.desc&limit=400'); }catch(e){ state.activity=[]; } }
-async function loadPaymentsFor(studentId){ try{ return await sbSelect('payments', `?student_id=eq.${studentId}&archived=eq.false&select=*&order=created_at.desc&limit=15`); }catch(e){ return []; } }
+async function loadPaymentsFor(studentId){
+  if(!state.user)return [];
+  // Accountants without View All Transactions may see only their own receipts.
+  const onlyMine=state.user.role==='accountant'&&!hasPerm('view_all_transactions');
+  const mine=onlyMine?`&recorded_by=eq.${encodeURIComponent(state.user.id)}`:'';
+  try{return await sbSelect('payments',`?student_id=eq.${encodeURIComponent(studentId)}&archived=eq.false${mine}&select=*&order=created_at.desc&limit=15`);}
+  catch(e){return [];}
+}
 async function loadLeaves(){
   try{
     const relation='select=*,students(roll_no,name,room,batch_id)';
@@ -1875,7 +1879,7 @@ function applyBatchFeeAmount(){
 }
 
 /* ---------- Bulk-assign existing students to a batch ---------- */
-function openBatchAssignModal(batchId){ state.modal = { type:'batchAssign', batchId, search:'', changes:{} }; update(); }
+function openBatchAssignModal(batchId){ if(state.user?.role!=='admin'){toast('Only administrators may assign students to batches.','error');return;} state.modal = { type:'batchAssign', batchId, search:'', changes:{} }; update(); }
 function batchAssignModalHTML(m){
   const batch=state.batches.find(b=>b.id===m.batchId);
   const q=(m.search||'').trim().toLowerCase();
@@ -1905,6 +1909,7 @@ function toggleBatchAssignAll(checked){
   });update();
 }
 async function submitBatchAssign(){
+  if(state.user?.role!=='admin'){toast('Batch assignment permission denied.','error');return;}
   const m=state.modal,ids=Object.keys(m.changes);
   if(!ids.length){closeModal();return;}
   const btn=document.getElementById('batch-assign-btn');if(btn){btn.disabled=true;btn.textContent='Saving…';}
@@ -1926,10 +1931,19 @@ async function submitBatchAssign(){
    STUDENT FORM (add/edit) — with dynamic contacts, gender, batch
    ============================================================ */
 function openStudentForm(rollNo){
+  if(rollNo && !canDo('edit_student')){toast('You do not have student edit permission.','error');return;}
+  if(!rollNo && !canDo('add_student')){toast('You do not have student registration permission.','error');return;}
   const existing = rollNo ? state.students.find(s=>s.roll_no.toLowerCase()===rollNo.toLowerCase()) : null;
+  if(rollNo && (!existing || !canViewStudent(existing))){toast('Student is not accessible in the selected batch.','error');return;}
+  const accessibleBatches=availableBatches();
+  if(!rollNo && state.user.role!=='admin' && !accessibleBatches.length){
+    toast('No active batch assigned. Ask the administrator to grant batch access.','error');return;
+  }
+  const preferredBatchId=existing?.batch_id || (
+    accessibleBatches.some(b=>b.id===state.selectedBatchId) ? state.selectedBatchId : (accessibleBatches[0]?.id||''));
   const contacts = existing ? parseContacts(existing.contacts) : [];
   const defaults = contacts.length ? contacts : [{label:'Student',phone:''},{label:'Guardian',phone:''}];
-  state.modal = { type:'studentForm', existing, originalRollNo: rollNo, contacts: defaults };
+  state.modal = { type:'studentForm', existing, originalRollNo: rollNo, contacts: defaults, preferredBatchId };
   update();
 }
 function syncContactsFromDOM(){
@@ -1962,6 +1976,9 @@ function contactRowsHTML(contacts){
 }
 function studentFormModalHTML(existing, contacts){
   const s = existing || {};
+  const primaryId=s.batch_id||state.modal?.preferredBatchId||'';
+  const primaryBatch=state.batches.find(b=>b.id===primaryId);
+  const initialFeeAmount=s.fee_total!=null?s.fee_total:(primaryBatch?.onetime_fee_amount??'');
   return `<div class="modal-overlay" onclick="if(event.target===this) closeModal()">
     <div class="modal modal-lg">
       <h3>${existing?'Edit student':'Add student'}</h3>
@@ -1981,14 +1998,14 @@ function studentFormModalHTML(existing, contacts){
         </select></label>
         <label>Primary batch (controls fee schedule)<select id="f-batch" onchange="onPrimaryBatchFormChange()">
           <option value="">— None —</option>
-          ${state.batches.filter(b=>state.user.role==='admin'||userBatchIds().includes(b.id)||s.batch_id===b.id).map(b=>`<option value="${escAttr(b.id)}" ${s.batch_id===b.id?'selected':''}>${esc(b.name)}</option>`).join('')}
+          ${state.batches.filter(b=>(!b.is_archived && (state.user.role==='admin'||userBatchIds().includes(b.id)))||primaryId===b.id).map(b=>`<option value="${escAttr(b.id)}" ${primaryId===b.id?'selected':''}>${esc(b.name)}</option>`).join('')}
         </select></label>
         <label>Father's name<input id="f-father" value="${esc(s.father_name||'')}" /></label>
         <label>Mother's name<input id="f-mother" value="${esc(s.mother_name||'')}" /></label>
       </div>
 
       <h4>Additional batches</h4>
-      <div class="batch-checklist" id="f-extra-batches">${availableBatches().map(b=>`<label><input type="checkbox" data-student-batch="${esc(b.id)}" ${(memberBatchIds(s).includes(b.id))?'checked':''} ${s.batch_id===b.id?'disabled':''} />${esc(b.name)}${s.batch_id===b.id?' (primary)':''}</label>`).join('')||'<span class="muted">Create a batch first.</span>'}</div>
+      <div class="batch-checklist" id="f-extra-batches">${availableBatches().map(b=>`<label><input type="checkbox" data-student-batch="${esc(b.id)}" ${(memberBatchIds(s).includes(b.id)||primaryId===b.id)?'checked':''} ${primaryId===b.id?'disabled':''} />${esc(b.name)}${primaryId===b.id?' (primary)':''}</label>`).join('')||'<span class="muted">No accessible batches.</span>'}</div>
       <hr class="section-divider" />
       <p class="muted" style="margin:0 0 10px; font-weight:700;">Address</p>
       <div class="form-grid two-col">
@@ -2010,14 +2027,13 @@ function studentFormModalHTML(existing, contacts){
           <option value="onetime" ${(s.fee_mode||'onetime')==='onetime'?'selected':''}>One-time</option>
           <option value="monthly" ${s.fee_mode==='monthly'?'selected':''}>Monthly</option>
         </select></label>
-        <label>Fee amount (₹)<input id="f-feetotal" type="number" value="${s.fee_total!=null?s.fee_total:''}" /></label>
+        <label>Fee amount (₹)<input id="f-feetotal" type="number" value="${initialFeeAmount}" /></label>
       </div>
       ${existing ? `
       <div class="form-grid">
         <label>Fee paid so far<div style="margin-top:5px; padding:10px 11px; background:var(--input-bg); border:1.5px solid var(--border); border-radius:9px;">${fmtMoney(s.fee_paid)} <span class="muted">— use "Record a payment" in their profile to add more</span></div></label>
-      </div>` : `
+      </div>` : canDo('record_payment') ? `
       <p class="muted" style="margin:0 0 10px; font-weight:700;">Payment at registration</p>
-      
       <div class="form-grid two-col">
         <label>Cash paid (₹)<input id="f-cash-paid" type="number" value="0" min="0" /></label>
         <label>Online paid (₹)<input id="f-online-paid" type="number" value="0" min="0" oninput="onOnlinePaidChange()" /></label>
@@ -2025,7 +2041,7 @@ function studentFormModalHTML(existing, contacts){
       <div class="form-grid two-col" id="f-reg-online-fields" style="display:none;">
         <label>Transaction UID<input id="f-payuid" /></label>
         <label>Bank<input id="f-paybank" /></label>
-      </div>`}
+      </div>` : ''}
       <div class="modal-actions">
         <button class="btn btn-ghost" onclick="closeModal()">${existing?'Cancel':'Done adding students'}</button>
         <button class="btn btn-primary" id="student-save-btn" onclick="submitStudentForm()">${existing?'Save changes':'Add student'}</button>
@@ -2034,6 +2050,8 @@ function studentFormModalHTML(existing, contacts){
   </div>`;
 }
 async function submitStudentForm(){
+  if(!state.modal?.originalRollNo && !canDo('add_student')){toast('Student registration permission denied.','error');return;}
+  if(state.modal?.originalRollNo && !canDo('edit_student')){toast('Student edit permission denied.','error');return;}
   syncContactsFromDOM();
   const originalRollNo = state.modal && state.modal.originalRollNo;
   const rollNo = document.getElementById('f-rollno').value.trim();
@@ -2041,6 +2059,7 @@ async function submitStudentForm(){
   const room = document.getElementById('f-room').value.trim();
   const gender = document.getElementById('f-gender').value || null;
   const batchId = document.getElementById('f-batch').value || null;
+  if(batchId && state.batches.find(b=>b.id===batchId)?.is_archived){toast('An archived batch cannot receive new students.','error');return;}
   const selectedBatchIds=[...document.querySelectorAll('[data-student-batch]:checked')].map(el=>el.dataset.studentBatch);
   if(batchId&&!selectedBatchIds.includes(batchId))selectedBatchIds.push(batchId);
   if(state.user.role!=='admin' && selectedBatchIds.some(id=>!userBatchIds().includes(id))){toast('You cannot assign a batch outside your staff access.','error');return;}
@@ -2060,7 +2079,7 @@ async function submitStudentForm(){
   if(state.user.role!=='admin' && (!batchId || (batchId!==state.modal.existing?.batch_id && !userBatchIds().includes(batchId)))){toast('Choose a primary batch you have access to.','error');return;}
 
   let cashPaid=0, onlinePaid=0, initUid='', initBank='';
-  if (!originalRollNo){
+  if (!originalRollNo && canDo('record_payment')){
     cashPaid = Math.max(0, parseFloat((document.getElementById('f-cash-paid')||{value:'0'}).value) || 0);
     onlinePaid = Math.max(0, parseFloat((document.getElementById('f-online-paid')||{value:'0'}).value) || 0);
     initUid = (document.getElementById('f-payuid')||{value:''}).value.trim();
@@ -2099,39 +2118,63 @@ async function submitStudentForm(){
   await actuallySubmitStudent(args);
 }
 async function actuallySubmitStudent({ rollNo, name, payload, originalRollNo, photoFile, cashPaid, onlinePaid, initUid, initBank, selectedBatchIds=[] }){
-  const btn = document.getElementById('student-save-btn'); if (btn){ btn.disabled=true; btn.textContent='Saving…'; }
+  if(originalRollNo && !canDo('edit_student')){toast('Student edit permission denied.','error');return;}
+  if(!originalRollNo && !canDo('add_student')){toast('Student registration permission denied.','error');return;}
+  const btn = document.getElementById('student-save-btn');
+  if(btn){btn.disabled=true;btn.textContent='Saving…';}
+  let savedStudent=false;
+  const warnings=[];
   try{
-    if (!originalRollNo){
-      payload.fee_paid = 0;
-      const inserted = await sbInsert('students', Object.assign({ roll_no: rollNo }, payload));
-       const row = inserted[0];
-       await saveStudentMemberships(row.id, selectedBatchIds, payload.batch_id);
-       if (photoFile){ const path = await uploadStudentPhoto(row.id, photoFile); await sbUpdate('students', `?id=eq.${row.id}`, { photo_path: path }); }
-      if ((cashPaid||0) > 0 || (onlinePaid||0) > 0){
-        try{ await sbRpc('record_split_payment', { p_roll_no: rollNo, p_cash_amount: cashPaid||0, p_online_amount: onlinePaid||0, p_uid: initUid, p_bank: initBank }); }
-        catch(payErr){ toast('Student added, but the initial payment could not be recorded: '+payErr.message, 'error'); }
-      }
-      await sbInsert('activity_log', { type:'student_add', roll_no: rollNo, details:`${name} (${rollNo})`, by_name: state.user.name });
-      await Promise.all([refreshOneStudent(rollNo), loadActivity(), refreshFinancialSummaries()]);
-      // Continuous add mode: reset to a fresh blank form instead of closing,
-      // so many students can be added in a row without reopening the modal each time.
-      state.modal = { type:'studentForm', existing:null, originalRollNo:null, contacts:[{label:'Student',phone:''},{label:'Guardian',phone:''}] };
-      update();
-      toast(`${name} added — ready for the next student.`,'success');
-      const rollInput = document.getElementById('f-rollno'); if (rollInput) rollInput.focus();
-    } else {
-      const row = state.students.find(s=>s.roll_no.toLowerCase()===originalRollNo.toLowerCase());
-      const patch = Object.assign({}, payload);
-      if (photoFile){ patch.photo_path = await uploadStudentPhoto(row.id, photoFile); }
-       await sbUpdate('students', `?id=eq.${row.id}`, patch);
-       await saveStudentMemberships(row.id, selectedBatchIds, payload.batch_id);
-       await sbInsert('activity_log', { type:'student_edit', roll_no: rollNo, details:`${name} (${rollNo})`, by_name: state.user.name });
-      closeModal();
-      await Promise.all([refreshOneStudent(rollNo), loadActivity(), refreshFinancialSummaries()]);
-      update();
-      toast('Student updated.','success');
+    let row;
+    if(!originalRollNo){
+      payload.fee_paid=0;
+      const inserted=await sbInsert('students',Object.assign({roll_no:rollNo},payload));
+      row=inserted&&inserted[0];
+      if(!row?.id)throw new Error('Student registration returned no record. Check SELECT/INSERT permissions.');
+      savedStudent=true;
+    }else{
+      row=state.students.find(s=>s.roll_no.toLowerCase()===originalRollNo.toLowerCase());
+      if(!row)throw new Error('Student not found in current batch.');
+      await sbUpdate('students',`?id=eq.${encodeURIComponent(row.id)}`,Object.assign({},payload));
+      savedStudent=true;
     }
-  }catch(e){ toast(e.message,'error'); if (btn){ btn.disabled=false; btn.textContent = originalRollNo?'Save changes':'Add student'; } }
+    // Student INSERT/UPDATE is complete here. Never imply the record failed to save
+    // if a separate optional photo, membership, payment or audit request fails.
+    try{await saveStudentMemberships(row.id,selectedBatchIds,payload.batch_id);}
+    catch(e){warnings.push('Batch memberships: '+e.message);}
+    if(photoFile){
+      try{
+        const path=await uploadStudentPhoto(row.id,photoFile);
+        await sbUpdate('students',`?id=eq.${encodeURIComponent(row.id)}`,{photo_path:path});
+        delete photoUrlCache[path];
+      }catch(e){warnings.push('Photo: '+e.message);}
+    }
+    if(!originalRollNo && (cashPaid>0||onlinePaid>0)){
+      try{
+        if(!canDo('record_payment'))throw new Error('Payment permission is not enabled.');
+        await sbRpc('record_split_payment',{p_roll_no:rollNo,p_cash_amount:cashPaid,p_online_amount:onlinePaid,p_uid:initUid,p_bank:initBank});
+      }catch(e){warnings.push('Initial payment NOT recorded: '+e.message);}
+    }
+    try{
+      await sbInsert('activity_log',{type:originalRollNo?'student_edit':'student_add',roll_no:rollNo,details:`${name} (${rollNo})`,by_name:state.user.name});
+    }catch(e){warnings.push('Audit entry: '+e.message);}
+    const refresh=await Promise.allSettled([refreshOneStudent(rollNo),loadActivity(),refreshFinancialSummaries()]);
+    refresh.forEach((r,i)=>{if(r.status==='rejected')warnings.push(['Student refresh','Activity refresh','Financial refresh'][i]+': '+r.reason?.message);});
+    if(originalRollNo){closeModal();}
+    else{
+      const nextPreferredBatchId=payload.batch_id||state.selectedBatchId||'';
+      state.modal={type:'studentForm',existing:null,originalRollNo:null,preferredBatchId:nextPreferredBatchId,
+        contacts:[{label:'Student',phone:''},{label:'Guardian',phone:''}]};
+      update();
+      const rollInput=document.getElementById('f-rollno');if(rollInput)rollInput.focus();
+    }
+    if(warnings.length){
+      toast(`${name} SAVED (roll ${rollNo}); additional operations need attention: ${warnings.join('; ')}. Do not add the same roll again.`,'error');
+    }else toast(originalRollNo?'Student updated successfully.':`${name} registered successfully.`,'success');
+  }catch(e){
+    toast(savedStudent?`Student ${rollNo} was saved, but a later step failed: ${e.message}. Check the record before retrying.`:e.message,'error');
+    if(btn?.isConnected){btn.disabled=false;btn.textContent=originalRollNo?'Save changes':'Add student';}
+  }
 }
 /* Privacy/bandwidth: photos are resized, stripped of metadata and aggressively compressed
    BEFORE upload. Never convert uploaded images into frontend base64 storage. */
@@ -2395,8 +2438,35 @@ function hostelIdCardAddress(){
   return manual || (state.idCardAddress||'').trim() || ID_CARD_DEFAULT_ADDRESS;
 }
 function studentBatchText(s){
-  const names = memberBatchIds(s).map(id=>batchName(id)).filter(Boolean);
-  return names.length ? [...new Set(names)].join(', ') : (batchName(s.batch_id)||'—');
+  const all=memberBatchIds(s);
+  if(!all.length)return '—';
+  return all.map(id=>{
+    const b=state.batches.find(b=>b.id===id);
+    if(!b)return '—';
+    // Print the complete institute batch name AND its short code.
+    return b.name+(b.short_code&&b.short_code.trim().toLowerCase()!==String(b.name).trim().toLowerCase()?' ('+b.short_code+')':'');
+  }).filter(x=>x!=='—').join(', ')||'—';
+}
+function studentIDValidTill(s){
+  // The database currently has batch.ends_on, not a separate student ID expiry field.
+  // Latest known end date across enrolled batches avoids prematurely expiring multibatch cards.
+  const ends=memberBatchIds(s).map(id=>state.batches.find(b=>b.id===id)?.ends_on)
+    .filter(d=>typeof d==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
+  const date=ends[ends.length-1];
+  if(!date)return '—'; // Never invent an expiry date.
+  const [yyyy,mm,dd]=date.split('-');
+  return `${dd}/${mm}/${yyyy}`;
+}
+function idCardSharedHeaderHTML(){
+  // Shared markup guarantees exactly matching title, top border and height on BOTH sides.
+  return `<div class="id-card-top">
+    <div class="id-brand-logo">${idCardLogoHTML()}</div>
+    <div class="id-brand-block">
+      <div class="id-brand-title">${esc(ID_CARD_HINDI_TITLE)}</div>
+      <div class="id-brand-address">${esc(hostelIdCardAddress())}</div>
+      ${state.idCardMobile?`<div class="id-brand-contact">Mob: ${esc(state.idCardMobile)}</div>`:''}
+    </div>
+  </div>`;
 }
 function studentAddressText(s){
   const structured = [
@@ -2427,23 +2497,15 @@ function idCardHTML(s){
   return `<div class="id-card-sheet">
     <div class="id-card-face id-card-front">
       ${idWatermarkHTML()}
-      <div class="id-front-topbar"></div>
-      <div class="id-front-header">
-        <div class="id-brand-logo">${idCardLogoHTML()}</div>
-        <div class="id-brand-block">
-          <div class="id-brand-title">${esc(ID_CARD_HINDI_TITLE)}</div>
-          <div class="id-brand-address">${esc(hostelIdCardAddress())}${state.idCardMobile?` · ${esc(state.idCardMobile)}`:''}</div>
-        </div>
-        <div class="id-card-badge">I-CARD</div>
-      </div>
+      ${idCardSharedHeaderHTML()}
       <div class="id-front-main">
         <div id="printphoto-${safeRoll}" class="id-photo" style="background:${avatarColor(s.name)}">${esc(initials(s.name))}</div>
         <div class="id-front-content">
           <div class="id-student-name">${esc(s.name||'—')}</div>
           <div class="id-detail-grid">
             <div class="id-detail-label">Roll No</div><div class="id-detail-value">${esc(s.roll_no||'—')}</div>
-            <div class="id-detail-label">Batch</div><div class="id-detail-value"><span class="id-batch-box">${esc(studentBatchText(s))}</span></div>
-            <div class="id-detail-label">Student</div><div class="id-detail-value">Hostel Resident</div>
+            <div class="id-detail-label">Batch</div><div class="id-detail-value ${studentBatchText(s).length>22?'id-batch-full':''}"><span class="id-batch-box">${esc(studentBatchText(s))}</span></div>
+            <div class="id-detail-label">Valid Till</div><div class="id-detail-value">${esc(studentIDValidTill(s))}</div>
           </div>
         </div>
         <div class="id-qr-panel">
@@ -2459,10 +2521,7 @@ function idCardHTML(s){
     </div>
     <div class="id-card-face id-card-back">
       ${idWatermarkHTML()}
-      <div class="id-back-top">
-        <div class="id-back-title">विद्या ग्राम छात्रावास</div>
-        <div class="id-back-addressline">${esc(hostelIdCardAddress())}${state.idCardMobile?` · ${esc(state.idCardMobile)}`:''}</div>
-      </div>
+      ${idCardSharedHeaderHTML()}
       <div class="id-back-body">
         <div class="id-back-row"><div class="id-back-label">Address</div><div class="id-back-value">${esc(studentAddressText(s))}</div></div>
         <div class="id-back-row"><div class="id-back-label">Father's Name</div><div class="id-back-value">${esc(s.father_name||'—')}</div></div>
@@ -2890,6 +2949,7 @@ function grantLeaveModalHTML(rollNo){
 }
 function onLeaveKindChange(){const el=document.getElementById('permanent-leave-warning');if(el)el.style.display=document.getElementById('leave-kind')?.value==='permanent'?'block':'none';}
 async function submitGrantLeave(){
+  if(!canDo('grant_leave')){toast('Leave permission denied.','error');return;}
   const rollNo = document.getElementById('leave-rollno').value.trim();
   const reason = document.getElementById('leave-reason').value.trim();
   const isPermanent=document.getElementById('leave-kind').value==='permanent';
@@ -3133,12 +3193,13 @@ function renderAssignmentDetail(){
   <div class="card no-pad"><table class="table"><thead><tr><th>Student</th><th>Recorded by</th><th>Time</th></tr></thead>
     <tbody>${list===null ? `<tr><td colspan="3" class="empty-hint">Loading…</td></tr>` : list.length? list.map(r=>{ const stu=r.students||{}; return `<tr><td data-label="Student">${esc(stu.name||'')} <span class="mono muted">${esc(stu.roll_no||'')}</span></td><td data-label="Recorded by" class="muted">${esc(r.recorded_by_name||'')}</td><td data-label="Time" class="muted">${fmtTime(r.created_at)}</td></tr>`; }).join('') : `<tr><td colspan="3" class="empty-hint">No one recorded yet.</td></tr>`}</tbody></table></div>`;
 }
-function startAssignmentScan(){ assignmentSessionCount = 0; state.scanning=true; update(); setTimeout(initCamera,60); }
+function startAssignmentScan(){ if(!canDo('manage_assignments')){toast('Assignment permission denied.','error');return;} assignmentSessionCount = 0; state.scanning=true; update(); setTimeout(initCamera,60); }
 function stopAssignmentScan(){
   stopCamera(); state.scanning=false; update();
   Promise.all([loadAssignmentRecords(state.openAssignmentId),loadAssignmentCounts()]).then(([list])=>{state._assignmentRecords=list;update();});
 }
 async function recordAssignmentScan(code, sessionKey){
+  if(!canDo('manage_assignments')){toast('Assignment permission denied.','error');return;}
   const normalized = String(code).trim();
   const key = sessionKey || (state.openAssignmentId+':'+normalized.toLowerCase());
   const viaCamera = state.scanning;
@@ -4084,6 +4145,7 @@ async function loadMyPayments(from, to){
 }
 function setMyTxnDateFilter(from,to){ state.myTxnDateFrom=from||null; state.myTxnDateTo=to||null; state._myPayments=null; update(); }
 async function recordPayment(rollNo){
+  if(!canDo('record_payment')){toast('Payment permission denied.','error');return;}
   const amount = parseFloat(document.getElementById('pay-amount').value);
   const method = document.getElementById('pay-method').value;
   const uid = document.getElementById('pay-uid') ? document.getElementById('pay-uid').value.trim() : '';
@@ -4101,6 +4163,7 @@ async function recordPayment(rollNo){
   await actuallyRecordPayment(rollNo, amount, method, uid, bank, note);
 }
 async function actuallyRecordPayment(rollNo, amount, method, uid, bank, note){
+  if(!canDo('record_payment')){toast('Payment permission denied.','error');return;}
   const btn = document.getElementById('pay-btn'); if (btn){ btn.disabled=true; btn.textContent='Recording…'; }
   try{
     await sbRpc('record_payment', { p_roll_no: rollNo, p_amount: amount, p_note: note, p_method: method, p_uid: uid, p_bank: bank });
@@ -4132,6 +4195,7 @@ function markFullPaidModalHTML(m){
   </div></div>`;
 }
 async function submitMarkFullPaid(rollNo){
+  if(!canDo('record_payment')){toast('Payment permission denied.','error');return;}
   const reason = document.getElementById('fullpaid-reason').value.trim();
   if (!reason){ toast('A reason is required.','error'); return; }
   const btn = document.getElementById('fullpaid-btn'); if (btn){ btn.disabled=true; btn.textContent='Saving…'; }
