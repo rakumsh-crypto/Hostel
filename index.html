@@ -420,6 +420,31 @@ a{color:var(--primary);}
  .report-table tr{break-inside:avoid;}
 }
 
+/* Simple student profile and shareable payment e-receipt */
+.simple-profile-paper{max-width:760px;margin:0 auto;}
+.simple-profile-columns{display:grid;grid-template-columns:1fr 1fr;gap:12px 22px;margin:20px 0 8px;}
+.simple-profile-field{font-size:13px;border-bottom:1px solid #E2E8F0;padding:7px 0;}
+.simple-profile-field span{display:block;color:#667085;font-size:11px;margin-bottom:3px;}
+.simple-profile-field strong{font-weight:650;word-break:break-word;}
+.simple-profile-field.wide{grid-column:1/-1;}
+.e-receipt-preview{position:relative;background:white;color:#152338;border:1px solid #D9E1EE;border-radius:12px;overflow:hidden;margin-top:14px;}
+.e-receipt-watermark{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:0;}
+.e-receipt-watermark img{width:180px;max-width:56%;opacity:.08;object-fit:contain;filter:grayscale(100%);}
+.e-receipt-watermark-text{font-size:44px;font-weight:800;letter-spacing:.08em;color:#2148A8;opacity:.06;transform:rotate(-22deg);white-space:nowrap;}
+.e-receipt-top,.e-receipt-body{position:relative;z-index:1;}
+.e-receipt-top{background:#2148A8;color:white;padding:18px 20px;}
+.e-receipt-top h3{color:white;margin:0;font-size:19px;}
+.e-receipt-top small{display:block;color:#E2EBFF;margin-top:4px;line-height:1.4;}
+.e-receipt-body{padding:18px 20px;}
+.e-receipt-sum{font-size:29px;font-weight:800;color:#193D91;margin:2px 0 14px;}
+.e-receipt-row{display:flex;justify-content:space-between;align-items:baseline;gap:18px;border-bottom:1px solid #EDF1F6;padding:8px 0;font-size:12.5px;}
+.e-receipt-row span{color:#596779;flex-shrink:0;}
+.e-receipt-row strong{text-align:right;color:#152338;font-weight:650;overflow-wrap:anywhere;}
+.e-receipt-note{font-size:11px;color:#68758B;padding-top:12px;line-height:1.5;}
+.e-receipt-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:16px;}
+@media(max-width:480px){.simple-profile-columns{grid-template-columns:1fr}.e-receipt-body{padding:14px}.e-receipt-row{gap:8px}}
+@media print{.simple-profile-paper{max-width:none}.e-receipt-paper{max-width:150mm;margin:10mm auto}.e-receipt-top,.e-receipt-sum{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+
 /* Global mobile quick-scan control; lives outside #app to keep the camera mounted. */
 #quick-scan-root{position:relative;z-index:95;}
 .qs-fab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:90;border:0;border-radius:999px;background:#4F46E5;color:#fff;box-shadow:0 6px 24px #171d3970;padding:12px 18px;font-weight:800;display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;touch-action:manipulation;}
@@ -461,6 +486,7 @@ const HARDCODED_SUPABASE_URL = 'https://dthsknsixkyyrkvfvtzi.supabase.co';
 const HARDCODED_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0aHNrbnNpeGt5eXJrdmZ2dHppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNjUyMDcsImV4cCI6MjA5Nzg0MTIwN30.gPmmlpdlxVc-FI7FrcBmkEPCE-ASS6-2Y-9_Q3mPpYA';
 const ID_CARD_HINDI_TITLE = 'विद्या ग्राम छात्रावास';
 const ID_CARD_DEFAULT_ADDRESS = 'Hasadih (Masaurhi) Patna';
+
 /* ============================================================
    STATE
    ============================================================ */
@@ -714,6 +740,20 @@ function toTitleCase(str){
 }
 function hasPerm(p){ return !!(state.user && state.user.permissions && state.user.permissions[p]); }
 function canDo(p){ return state.user && (state.user.role==='admin' || (state.user.role==='accountant' && hasPerm(p))); }
+// Read fresh permission flags before a sensitive accountant write. Admin changes
+// made in Staff Management are effective even in already-open browser sessions.
+async function verifyFreshStaffPermission(permission){
+  if(!state.user) throw new Error('Please sign in again.');
+  if(state.user.role==='admin') return true;
+  const rows=await sbSelect('profiles',`?id=eq.${encodeURIComponent(state.user.id)}&select=role,active,permissions&limit=1`);
+  const profile=rows&&rows[0];
+  if(!profile||profile.active===false) throw new Error('Staff account disabled. Please contact the administrator.');
+  if(profile.role!==state.user.role) throw new Error('Your role has changed. Please sign out and log in again.');
+  state.user.permissions=profile.permissions||{};
+  if(!canDo(permission)) throw new Error('Permission denied: '+permission.replace(/_/g,' ')+'.');
+  return true;
+}
+
 function isViewer(){ return !!(state.user && state.user.role==='viewer'); }
 function filterByDate(list, from, to, field){
   if (!from && !to) return list;
@@ -1376,7 +1416,7 @@ async function saveStudentMemberships(studentId, selectedIds, originalPrimary){
   const target=new Set(selectedIds||[]);
   if(originalPrimary) target.add(originalPrimary);
   const existing=new Set((state.batchMemberships||[]).filter(m=>m.student_id===studentId).map(m=>m.batch_id));
-  for(const id of target){ if(!existing.has(id)) await sbUpsert('student_batches', {student_id:studentId,batch_id:id}, 'student_id,batch_id'); }
+  for(const id of target){ if(!existing.has(id)) await sbRequest('/student_batches?on_conflict=student_id,batch_id',{method:'POST',body:{student_id:studentId,batch_id:id},headers:{Prefer:'resolution=ignore-duplicates,return=minimal'}}); }
   for(const id of existing){ if(!target.has(id)) await sbDelete('student_batches', `?student_id=eq.${encodeURIComponent(studentId)}&batch_id=eq.${encodeURIComponent(id)}`); }
   await loadStudentBatchMemberships();
 }
@@ -1510,24 +1550,195 @@ function showPrintDocument(html){
  const area=document.getElementById('print-area');area.setAttribute('data-print-kind','report');area.innerHTML=html;
  setTimeout(()=>window.print(),150);
 }
-function printProfileDocument(rollNo,type){
+function printProfileDocument(rollNo){
  if(state.user?.role!=='admin')return;
- const s=state.students.find(x=>x.roll_no.toLowerCase()===String(rollNo).toLowerCase());if(!s||!canViewStudent(s))return;
- const info=[['Student',s.name],['Roll No.',s.roll_no],['Batch',studentBatchLabels(s)],['Room',s.room],['Father',s.father_name],['Mother',s.mother_name],['Address',studentAddressText(s)],['Emergency contact',emergencyNumberText(s)]];
- if(type==='profile')info.push(['Fee total',fmtMoney(s.fee_total)],['Amount paid',fmtMoney(s.fee_paid)],['Balance',fmtMoney(Math.max(0,s.fee_total-s.fee_paid))]);
- const title=type==='admission'?'ADMISSION FORM':'STUDENT PROFILE';
- showPrintDocument(`<div class="report-paper"><div class="report-paper-header"><h2>विद्या ग्राम छात्रावास</h2><p>${esc(hostelIdCardAddress())}</p></div><h3>${title}</h3>
- ${info.map(([k,v])=>`<div class="print-detail"><strong>${esc(k)}</strong><span>${esc(v||'—')}</span></div>`).join('')}
- ${type==='admission'?'<div class="print-signatures"><span>Student signature</span><span>Guardian signature</span><span>Office seal</span></div>':''}</div>`);
+ const s=state.students.find(x=>x.roll_no.toLowerCase()===String(rollNo).toLowerCase());
+ if(!s||!canViewStudent(s))return;
+ const info=[
+   ['Student name',s.name],['Roll number',s.roll_no],['Batch',studentBatchLabels(s)],['Room',s.room],
+   ["Father's name",s.father_name],['Emergency contact',emergencyNumberText(s)],
+   ['Address',studentAddressText(s)],['Fee amount',fmtMoney(s.fee_total)],
+   ['Paid so far',fmtMoney(s.fee_paid)],['Outstanding',fmtMoney(Math.max(0,Number(s.fee_total||0)-Number(s.fee_paid||0)))]
+ ];
+ showPrintDocument(`<div class="report-paper simple-profile-paper">
+   <div class="report-paper-header"><h2>विद्या ग्राम छात्रावास</h2><p>${esc(hostelIdCardAddress())}</p></div>
+   <h3 style="text-align:center;margin:18px 0 0;">STUDENT PROFILE</h3>
+   <div class="simple-profile-columns">${info.map(([k,v],i)=>`<div class="simple-profile-field ${i===6?'wide':''}"><span>${esc(k)}</span><strong>${esc(v||'—')}</strong></div>`).join('')}</div>
+ </div>`);
 }
-function printFeeReceipt(rollNo,paymentId){
- if(state.user?.role!=='admin')return;
- const m=state.modal,p=(m&&m.type==='profile'?(m.payments||[]):[]).find(x=>x.id===paymentId);
- const s=state.students.find(x=>x.roll_no.toLowerCase()===String(rollNo).toLowerCase());if(!p||!s)return;
- const lines=[['Student',s.name],['Roll number',s.roll_no],['Batch',studentBatchLabels(s)],['Receipt number',p.txn_ref||p.id],['Date',fmtTime(p.created_at)],['Amount',fmtMoney(p.amount)],['Mode',p.payment_method],['Received by',p.recorded_by_name]];
- showPrintDocument(`<div class="report-paper"><div class="report-paper-header"><h2>विद्या ग्राम छात्रावास</h2><p>${esc(hostelIdCardAddress())}</p></div><h3>FEE RECEIPT</h3>
- ${lines.map(([k,v])=>`<div class="print-detail"><strong>${esc(k)}</strong><span>${esc(String(v||'—'))}</span></div>`).join('')}
- <div class="print-signatures"><span>Authorized signature</span></div></div>`);
+
+// Every e-receipt is derived from an existing, non-archived cash/online transaction.
+// Amount, receipt number and date are never entered manually.
+function canOpenEReceipt(){return !!(state.user && (state.user.role==='admin'||canDo('record_payment')));}
+async function openEReceipt(rollNo,requestedPaymentId){
+ if(!canOpenEReceipt())return;
+ const student=state.students.find(s=>String(s.roll_no).toLowerCase()===String(rollNo).toLowerCase());
+ if(!student||!canViewStudent(student)){toast('Student not available.','error');return;}
+ state.modal={type:'eReceipt',student,payments:null,paymentId:requestedPaymentId||null};
+ update();
+ try{
+   const onlyMine=state.user.role==='accountant'&&!hasPerm('view_all_transactions');
+   const mine=onlyMine?`&recorded_by=eq.${encodeURIComponent(state.user.id)}`:'';
+   const all=await sbSelectAll('payments',`?student_id=eq.${encodeURIComponent(student.id)}&archived=eq.false&payment_method=in.(cash,online)${mine}&select=id,txn_ref,amount,payment_method,bank_name,transaction_uid,created_at,recorded_by_name,student_id&order=created_at.desc`);
+   if(state.modal?.type!=='eReceipt'||state.modal.student.id!==student.id)return;
+   const available=(all||[]).filter(p=>Number(p.amount)>0 && (p.payment_method==='cash'||p.payment_method==='online'));
+   state.modal.payments=available;
+   state.modal.paymentId=available.some(p=>p.id===requestedPaymentId)?requestedPaymentId:(available[0]?.id||null);
+   update();
+ }catch(e){
+   if(state.modal?.type==='eReceipt'&&state.modal.student.id===student.id){
+     state.modal.error=e.message||'Payment records could not be loaded.';
+     state.modal.payments=[];update();
+   }
+ }
+}
+function setEReceiptPayment(id){if(state.modal?.type!=='eReceipt')return;state.modal.paymentId=id;update();}
+function eReceiptSelected(m){return (m?.payments||[]).find(p=>p.id===m.paymentId)||null;}
+function eReceiptData(m){
+ const p=eReceiptSelected(m);if(!p)return null;
+ const s=m.student;
+ return {
+   student:String(s.name||''),
+   roll:String(s.roll_no||''),
+   room:String(s.room||''),
+   father:String(s.father_name||''),
+   batch:studentBatchLabels(s),
+   receipt:String(p.txn_ref||p.id),
+   date:fmtTime(p.created_at),
+   amount:fmtMoney(p.amount),
+   method:p.payment_method==='online'?'Online':'Cash',
+   bank:p.payment_method==='online'?String(p.bank_name||''):'',
+   utr:p.payment_method==='online'?String(p.transaction_uid||''):'',
+   receivedBy:String(p.recorded_by_name||'—')
+ };
+}
+function eReceiptRows(data){
+ return [
+  ['Student',data.student],
+  ['Roll No.',data.roll],
+  ['Room No.',data.room],
+  ["Father's Name",data.father],
+  ['Batch',data.batch],
+  ['Receipt No.',data.receipt],
+  ['Payment Date',data.date],
+  ['Payment Method',data.method],
+  ...(data.bank?[['Bank',data.bank]]:[]),
+  ...(data.utr?[['Transaction UID',data.utr]]:[]),
+  ['Received By',data.receivedBy]
+ ];
+}
+function eReceiptPaperHTML(data){
+ const watermark = state.hostelLogoDataUrl
+   ? `<div class="e-receipt-watermark"><img src="${esc(state.hostelLogoDataUrl)}" alt="Hostel logo watermark" /></div>`
+   : `<div class="e-receipt-watermark"><div class="e-receipt-watermark-text">VIDYA GRAM</div></div>`;
+ return `<div class="report-paper e-receipt-paper"><div class="e-receipt-preview">
+   ${watermark}
+   <div class="e-receipt-top"><h3>विद्या ग्राम छात्रावास</h3><small>${esc(hostelIdCardAddress())}${state.idCardMobile?' · '+esc(state.idCardMobile):''}</small><small>FEE PAYMENT E-RECEIPT</small></div>
+   <div class="e-receipt-body"><div class="e-receipt-row"><span><strong>Receipt Serial</strong></span><strong>${esc(data.receipt||'—')}</strong></div><div class="muted" style="margin-top:10px;">Amount received</div><div class="e-receipt-sum">${esc(data.amount)}</div>
+   ${eReceiptRows(data).filter(([label])=>label!=='Receipt No.').map(([label,value])=>`<div class="e-receipt-row"><span>${esc(label)}</span><strong>${esc(value||'—')}</strong></div>`).join('')}
+   <div class="e-receipt-note">Receipt for the payment shown above. This is not confirmation of full fee clearance.</div>
+   </div></div></div>`;
+}
+function eReceiptModalHTML(m){
+ const data=eReceiptData(m);
+ const payments=m.payments;
+ return `<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal modal-lg">
+   <h3>E-Receipt</h3>
+   ${payments===null?'<p class="muted">Loading payment records…</p>':!payments.length?`<p class="muted">${esc(m.error||'No cash or online payment record is available for this student.')}</p>`:`
+     <div class="form-grid"><label>Payment<select id="e-receipt-payment" onchange="setEReceiptPayment(this.value)">
+       ${payments.map(p=>`<option value="${esc(p.id)}" ${p.id===m.paymentId?'selected':''}>${esc(fmtTime(p.created_at))} · ${fmtMoney(p.amount)} · ${esc(p.txn_ref||p.id)}</option>`).join('')}
+     </select></label></div>
+     ${data?eReceiptPaperHTML(data):''}
+     <div class="e-receipt-actions">
+       <button class="btn btn-secondary" onclick="printEReceipt()">Print / Save PDF</button>
+       <button class="btn btn-secondary" onclick="downloadEReceiptImage()">Download image</button>
+       <button class="btn btn-primary" onclick="shareEReceipt()">Share</button>
+     </div>`}
+   <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Close</button></div>
+ </div></div>`;
+}
+function printEReceipt(){
+ const data=eReceiptData(state.modal);if(!data){toast('Select a recorded payment.','error');return;}
+ showPrintDocument(eReceiptPaperHTML(data));
+}
+function receiptImageFilename(data){
+ return 'VidyaGram_Receipt_'+[data.roll,data.receipt].map(x=>String(x||'').replace(/[^a-zA-Z0-9_-]/g,'_').slice(0,35)).join('_')+'.png';
+}
+function wrapReceiptText(ctx,text,maxWidth){
+ const words=String(text||'—').split(/\s+/).filter(Boolean);const lines=[];let line='';
+ for(const word of words){
+   const trial=line?line+' '+word:word;
+   if(ctx.measureText(trial).width>maxWidth && line){lines.push(line);line=word;}else line=trial;
+   if(ctx.measureText(line).width>maxWidth){
+     let part='';for(const char of line){if(ctx.measureText(part+char).width>maxWidth&&part){lines.push(part);part=char;}else part+=char;}line=part;
+   }
+ }
+ if(line)lines.push(line);return lines.length?lines:['—'];
+}
+function renderEReceiptCanvas(data){
+ const canvas=document.createElement('canvas');canvas.width=920;canvas.height=1250;
+ const ctx=canvas.getContext('2d');if(!ctx)throw new Error('Image creation unavailable.');
+ ctx.fillStyle='#FFFFFF';ctx.fillRect(0,0,920,1250);
+ ctx.fillStyle='#2148A8';ctx.fillRect(0,0,920,215);
+ ctx.fillStyle='#FFFFFF';ctx.font='bold 47px sans-serif';ctx.fillText('VIDYA GRAM CHHATRWAS',55,84);
+ ctx.font='26px sans-serif';ctx.fillText('FEE PAYMENT E-RECEIPT',55,141);
+ ctx.font='22px sans-serif';
+ const address=hostelIdCardAddress();const header=address==='Hostel address not set'?'':address+(state.idCardMobile?' · '+state.idCardMobile:'');
+ ctx.fillText(wrapReceiptText(ctx,header,800)[0]||'',55,183);
+ ctx.fillStyle='#667085';ctx.font='25px sans-serif';ctx.fillText('AMOUNT RECEIVED',55,285);
+ ctx.fillStyle='#2148A8';ctx.font='bold 66px sans-serif';ctx.fillText(data.amount,55,365);
+ let y=425;
+ for(const [label,value] of eReceiptRows(data)){
+   ctx.fillStyle='#64748B';ctx.font='23px sans-serif';ctx.fillText(label,55,y);
+   ctx.font='bold 24px sans-serif';
+   const lines=wrapReceiptText(ctx,value,545);
+   ctx.fillStyle='#14223B';lines.forEach((part,i)=>ctx.fillText(part,315,y+i*32));
+   y+=Math.max(55,lines.length*32+20);
+   ctx.strokeStyle='#E6EBF3';ctx.beginPath();ctx.moveTo(55,y-20);ctx.lineTo(865,y-20);ctx.stroke();
+ }
+ if(y>1150)throw new Error('Receipt contains unusually long details. Use Print / Save PDF instead.');
+ ctx.fillStyle='#64748B';ctx.font='20px sans-serif';
+ ctx.fillText('Receipt confirms this payment only, not full fee clearance.',55,1197);
+ return canvas;
+}
+function eReceiptImageBlob(data){
+ return new Promise((resolve,reject)=>{
+   try{renderEReceiptCanvas(data).toBlob(blob=>blob?resolve(blob):reject(new Error('Could not create receipt image.')),'image/png');}
+   catch(e){reject(e);}
+ });
+}
+function eReceiptImageBlobForShare(data){
+ // Build the file synchronously so mobile browsers retain the tap gesture for Web Share.
+ const uri=renderEReceiptCanvas(data).toDataURL('image/png');
+ const base64=uri.slice(uri.indexOf(',')+1);
+ const binary=atob(base64),bytes=new Uint8Array(binary.length);
+ for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+ return new Blob([bytes],{type:'image/png'});
+}
+async function downloadEReceiptImage(){
+ const data=eReceiptData(state.modal);if(!data){toast('Select a recorded payment.','error');return;}
+ try{
+   const blob=await eReceiptImageBlob(data);const link=document.createElement('a');const url=URL.createObjectURL(blob);
+   link.href=url;link.download=receiptImageFilename(data);document.body.appendChild(link);link.click();link.remove();
+   setTimeout(()=>URL.revokeObjectURL(url),15000);
+   toast('Receipt image ready to send.','success');
+ }catch(e){toast(e.message,'error');}
+}
+async function shareEReceipt(){
+ const data=eReceiptData(state.modal);if(!data){toast('Select a recorded payment.','error');return;}
+ try{
+   const blob=eReceiptImageBlobForShare(data);
+   const file=new File([blob],receiptImageFilename(data),{type:'image/png'});
+   if(navigator.share && typeof navigator.canShare==='function' && navigator.canShare({files:[file]})){
+     await navigator.share({files:[file],title:'Vidya Gram payment receipt'});
+   }else{
+     // Browser does not support attaching files to native sharing.
+     const link=document.createElement('a');const url=URL.createObjectURL(blob);
+     link.href=url;link.download=file.name;document.body.appendChild(link);link.click();link.remove();
+     setTimeout(()=>URL.revokeObjectURL(url),15000);
+     toast('Image downloaded. Attach it to your message.','success');
+   }
+ }catch(e){if(e.name!=='AbortError')toast('Could not share receipt: '+(e.message||e),'error');}
 }
 
 /* ---------- Dashboard ---------- */
@@ -2125,6 +2336,7 @@ async function actuallySubmitStudent({ rollNo, name, payload, originalRollNo, ph
   let savedStudent=false;
   const warnings=[];
   try{
+    await verifyFreshStaffPermission(originalRollNo?'edit_student':'add_student');
     let row;
     if(!originalRollNo){
       payload.fee_paid=0;
@@ -2145,7 +2357,7 @@ async function actuallySubmitStudent({ rollNo, name, payload, originalRollNo, ph
     if(photoFile){
       try{
         const path=await uploadStudentPhoto(row.id,photoFile);
-        await sbUpdate('students',`?id=eq.${encodeURIComponent(row.id)}`,{photo_path:path});
+        await sbRpc('vga_set_student_photo',{p_student_id:row.id,p_photo_path:path});
         delete photoUrlCache[path];
       }catch(e){warnings.push('Photo: '+e.message);}
     }
@@ -2172,7 +2384,10 @@ async function actuallySubmitStudent({ rollNo, name, payload, originalRollNo, ph
       toast(`${name} SAVED (roll ${rollNo}); additional operations need attention: ${warnings.join('; ')}. Do not add the same roll again.`,'error');
     }else toast(originalRollNo?'Student updated successfully.':`${name} registered successfully.`,'success');
   }catch(e){
-    toast(savedStudent?`Student ${rollNo} was saved, but a later step failed: ${e.message}. Check the record before retrying.`:e.message,'error');
+    let message=String(e.message||'Save failed.');
+    if(!savedStudent && /vga_students_read_scope|row-level security/i.test(message))
+      message='Registration blocked by Supabase security. Check assigned batch and the student registration RLS migration. Details: '+message;
+    toast(savedStudent?`Student ${rollNo} was saved, but a later step failed: ${message}. Check the record before retrying.`:message,'error');
     if(btn?.isConnected){btn.disabled=false;btn.textContent=originalRollNo?'Save changes':'Add student';}
   }
 }
@@ -2378,7 +2593,7 @@ function profileModalHTML(s, payments, leaveHistory, attendanceHistory){
       ${monthlyStatusHTML(s)}
       ${conversionSuggestionHTML(s, batch, isAdmin)}
       ${canRecordPayment ? recordPaymentFormHTML(s.roll_no) : ''}
-      ${payments && payments.length ? `<table class="table"><tbody>${payments.map(p=>`<tr><td class="mono muted">${esc(p.txn_ref||'—')}</td><td>${fmtTime(p.created_at)}</td><td>${fmtMoney(p.amount)}</td><td class="muted">${p.payment_method==='discount'?'<span class="badge badge-discount">discount</span>':esc(p.payment_method||'cash')}${p.payment_method==='online'&&p.bank_name?' · '+esc(p.bank_name):''}${p.payment_method==='online'&&p.transaction_uid?' · '+esc(p.transaction_uid):''}</td><td class="muted">${esc(p.recorded_by_name||'')}</td><td class="muted">${esc(p.note||'')}</td>${isAdmin&&p.payment_method!=='discount'?`<td class="row-actions"><button class="icon-btn" onclick="printFeeReceipt('${escAttr(s.roll_no)}','${escAttr(p.id)}')">Receipt</button><button class="icon-btn" onclick="openEditPaymentModal('${escAttr(p.id)}','profile')">Edit</button><button class="icon-btn icon-danger" onclick="archivePaymentAction('${escAttr(p.id)}','profile')">Bin</button></td>`:isAdmin?'<td></td>':''}</tr>`).join('')}</tbody></table>` : '<p class="muted">No payments recorded yet.</p>'}
+      ${payments && payments.length ? `<table class="table"><tbody>${payments.map(p=>`<tr><td class="mono muted">${esc(p.txn_ref||'—')}</td><td>${fmtTime(p.created_at)}</td><td>${fmtMoney(p.amount)}</td><td class="muted">${p.payment_method==='discount'?'<span class="badge badge-discount">discount</span>':esc(p.payment_method||'cash')}${p.payment_method==='online'&&p.bank_name?' · '+esc(p.bank_name):''}${p.payment_method==='online'&&p.transaction_uid?' · '+esc(p.transaction_uid):''}</td><td class="muted">${esc(p.recorded_by_name||'')}</td><td class="muted">${esc(p.note||'')}</td>${isAdmin&&p.payment_method!=='discount'?`<td class="row-actions"><button class="icon-btn" onclick="openEReceipt('${escAttr(s.roll_no)}','${escAttr(p.id)}')">E-Receipt</button><button class="icon-btn" onclick="openEditPaymentModal('${escAttr(p.id)}','profile')">Edit</button><button class="icon-btn icon-danger" onclick="archivePaymentAction('${escAttr(p.id)}','profile')">Bin</button></td>`:isAdmin?'<td></td>':''}</tr>`).join('')}</tbody></table>` : '<p class="muted">No payments recorded yet.</p>'}
       ${isAdmin ? `<p style="margin-top:8px;"><button class="link-btn" onclick="openLogHistoricalPayment('${escAttr(s.roll_no)}','${escAttr(s.name)}')">+ Log a missing/historical payment</button></p>` : ''}
 
       <div class="profile-section-title">Leave history (${leavesTaken} completed)</div>
@@ -2398,7 +2613,8 @@ function profileModalHTML(s, payments, leaveHistory, attendanceHistory){
       </div>` : ''}
 
       <div class="profile-actions">
-        ${isAdmin?`<button class="btn btn-secondary" onclick="printProfileDocument('${escAttr(s.roll_no)}','profile')">Print profile</button><button class="btn btn-secondary" onclick="printProfileDocument('${escAttr(s.roll_no)}','admission')">Admission form</button>`:''}
+        ${isAdmin?`<button class="btn btn-secondary" onclick="printProfileDocument('${escAttr(s.roll_no)}')">Profile form</button>`:''}
+        ${canOpenEReceipt()?`<button class="btn btn-primary" onclick="openEReceipt('${escAttr(s.roll_no)}')">E-Receipt</button>`:''}
         ${(isAdmin||canDo('edit_student'))? `<button class="btn btn-secondary" onclick="openStudentForm('${escAttr(s.roll_no)}')">Edit details</button>` : ''}
         ${canGrantLeave && !currentLeave? `<button class="btn btn-secondary" onclick="openGrantLeaveModal('${escAttr(s.roll_no)}')">Grant leave</button>` : ''}
         ${canGrantLeave && currentLeave && currentLeave.status==='approved'? `<button class="btn btn-danger" onclick="revokeLeave('${escAttr(s.roll_no)}','${escAttr(s.name)}')">Revoke leave</button>` : ''}
@@ -4345,6 +4561,7 @@ function loadRosterPhotos(){ /* no-op: only individual student detail may show a
 function renderModal(){
   if (!state.modal) return '';
   switch(state.modal.type){
+    case 'eReceipt': return eReceiptModalHTML(state.modal);
     case 'idPrint': return idPrintModalHTML(state.modal);
     case 'backupImport': return backupImportModalHTML(state.modal);
     case 'studentForm': return studentFormModalHTML(state.modal.existing, state.modal.contacts);
