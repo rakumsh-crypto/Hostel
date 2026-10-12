@@ -487,6 +487,7 @@ const HARDCODED_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3
 const ID_CARD_HINDI_TITLE = 'विद्या ग्राम छात्रावास';
 const ID_CARD_DEFAULT_ADDRESS = 'Hasadih (Masaurhi) Patna';
 
+
 /* ============================================================
    STATE
    ============================================================ */
@@ -784,11 +785,16 @@ function availableBatches(){
   if(!state.user) return [];
   return state.user.role==='admin' ? state.batches.filter(b=>!b.is_archived) : state.batches.filter(b=>!b.is_archived&&userBatchIds().includes(b.id));
 }
-function canViewStudent(s){
+// Authorization for student operations is distinct from the currently selected
+// screen filter. The selected batch only narrows list views, not an assignment
+// whose target is another authorized batch or all authorized batches.
+function canAccessStudent(s){
   if(!s || !state.user) return false;
-  const memberships=memberBatchIds(s);
-  if(state.user.role!=='admin' && !memberships.some(id=>userBatchIds().includes(id))) return false;
-  return !state.selectedBatchId || memberships.includes(state.selectedBatchId);
+  return state.user.role==='admin' || memberBatchIds(s).some(id=>userBatchIds().includes(id));
+}
+function canViewStudent(s){
+  if(!canAccessStudent(s)) return false;
+  return !state.selectedBatchId || memberBatchIds(s).includes(state.selectedBatchId);
 }
 function visibleStudents(){ return (state.students||[]).filter(canViewStudent); }
 function visibleStudentIds(){ return new Set(visibleStudents().map(s=>s.id)); }
@@ -1368,7 +1374,7 @@ async function refreshOneStudent(rollNo){
   try{
     const rows = await sbSelect('students', `?roll_no=eq.${encodeURIComponent(rollNo)}&select=*&limit=1`);
     const fresh = rows && rows[0];
-    if (!fresh || !canViewStudent(fresh)) return; // do not add unseen students through scan lookups
+    if (!fresh || !canAccessStudent(fresh)) return; // server RLS and staff batch access still restrict the student
     const idx = state.students.findIndex(s=>s.id===fresh.id);
     if (idx!==-1) state.students[idx] = fresh; else state.students.unshift(fresh);
   }catch(e){ /* non-fatal — the on-screen data just stays one action stale until the next full load */ }
@@ -3316,7 +3322,9 @@ async function loadAssignments(){
 }
 async function loadAssignmentCounts(){
   try{
-    const rows=await sbRpc('vidya_assignment_counts',{p_batch_id:state.selectedBatchId||null});
+    // Counts represent unique recipients across authorized batches, regardless
+    // of which batch is currently selected as a screen filter.
+    const rows=await sbRpc('vidya_assignment_counts',{p_batch_id:null});
     const counts={};(rows||[]).forEach(r=>{counts[r.assignment_id]=Number(r.recipient_count)||0;});
     state.assignmentCounts=counts;
   }catch(e){state.assignmentCounts={};}
@@ -3376,9 +3384,18 @@ async function submitNewAssignment(){
 
 
 function openAssignmentDetail(id, name){
-  state.openAssignmentId = id; state.openAssignmentName = name; state._assignmentRecords = null;
+  // The batch dropdown filters the assignment list, not whether an already
+  // authorized assignment may be opened (e.g. immediately after creation).
+  const assignment=(state._assignments||[]).find(a=>a.id===id);
+  const permitted=assignment && canDo('manage_assignments') &&
+    (state.user.role==='admin'||!assignment.batch_id||userBatchIds().includes(assignment.batch_id));
+  if(!permitted){toast('Assignment is not accessible to your account.','error');return;}
+  state.openAssignmentId = id; state.openAssignmentName = assignment.name||name; state._assignmentRecords = null;
   update();
-  Promise.all([loadAssignmentRecords(id),loadAssignmentCounts()]).then(([list])=>{state._assignmentRecords=list;update();});
+  Promise.all([loadAssignmentRecords(id),loadAssignmentCounts()]).then(([list])=>{
+    if(state.openAssignmentId!==id)return;
+    state._assignmentRecords=list;update();
+  });
 }
 function closeAssignmentDetail(){
   if (state.scanning) stopCamera();
@@ -3386,13 +3403,16 @@ function closeAssignmentDetail(){
   update();
 }
 function renderAssignmentDetail(){
-  const ids=visibleStudentIds();
+  const assignment=(state._assignments||[]).find(a=>a.id===state.openAssignmentId);
+  const ids=new Set((state.students||[]).filter(s=>canAccessStudent(s) && (!assignment?.batch_id || isMemberOfBatch(s,assignment.batch_id))).map(s=>s.id));
   const list = state._assignmentRecords && state._assignmentRecords.filter(r=>ids.has(r.student_id));
   const recorded=state.assignmentCounts[state.openAssignmentId]??(list?list.length:'—');
+  const scope=assignment?.batch_id?`Target batch: ${batchName(assignment.batch_id)}`:'All batches assigned to your account';
   return `
   <button class="btn btn-ghost" style="margin-bottom:14px;" onclick="closeAssignmentDetail()">← All assignments</button>
   <h2 style="margin-bottom:8px;">${esc(state.openAssignmentName||'')}</h2>
-  <div class="stat-card" style="margin-bottom:16px;"><div class="stat-num" id="assignment-recipient-count">${recorded}</div><div class="stat-label">Unique students recorded for this assignment</div></div>
+  <p class="muted" style="margin-bottom:12px;">${esc(scope)}</p>
+  <div class="stat-card" style="margin-bottom:16px;"><div class="stat-num" id="assignment-recipient-count">${recorded}</div><div class="stat-label">Unique students recorded for this assignment (authorized batches)</div></div>
   <div class="scan-panel ${state.scanning?'':'scan-idle'}" style="margin-bottom:22px;">
     ${state.scanning ? `
       <div class="scan-frame">
@@ -3414,44 +3434,70 @@ function stopAssignmentScan(){
   stopCamera(); state.scanning=false; update();
   Promise.all([loadAssignmentRecords(state.openAssignmentId),loadAssignmentCounts()]).then(([list])=>{state._assignmentRecords=list;update();});
 }
+function assignmentStudentEligibility(student, assignment){
+  if(!state.user || !canDo('manage_assignments'))return {allowed:false,message:'Assignment permission is disabled for your account.'};
+  if(!assignment)return {allowed:false,message:'Assignment not found. Refresh the assignments list.'};
+  if(assignment.batch_id && state.user.role!=='admin' && !userBatchIds().includes(assignment.batch_id))
+    return {allowed:false,message:'You are not assigned to the target batch of this assignment.'};
+  if(assignment.batch_id && !isMemberOfBatch(student,assignment.batch_id))
+    return {allowed:false,message:`Student is not enrolled in ${batchName(assignment.batch_id)}. Check the student's batch memberships.`};
+  if(!canAccessStudent(student))
+    return {allowed:false,message:'Student is outside your assigned batches. Ask the administrator to grant batch access.'};
+  return {allowed:true,message:''};
+}
 async function recordAssignmentScan(code, sessionKey){
-  if(!canDo('manage_assignments')){toast('Assignment permission denied.','error');return;}
-  const normalized = String(code).trim();
-  const key = sessionKey || (state.openAssignmentId+':'+normalized.toLowerCase());
-  const viaCamera = state.scanning;
+  if(!canDo('manage_assignments')){toast('Assignment permission denied.','error');return false;}
+  const normalized=String(code||'').trim();
+  if(!normalized){toast('Enter a roll number.','error');return false;}
+  const assignmentId=state.openAssignmentId;
+  const key=sessionKey || (assignmentId+':'+normalized.toLowerCase());
+  const viaCamera=state.scanning;
   try{
-    let rows = state.students.filter(s=>s.roll_no.toLowerCase()===normalized.toLowerCase());
-    if (!rows.length){ await refreshOneStudent(normalized); rows = state.students.filter(s=>s.roll_no.toLowerCase()===normalized.toLowerCase()); }
-    if (!rows.length){
-      buzz([30,30,30]); assignmentErrorCooldown[key]=Date.now();
-      if (viaCamera) showAsnFeedback('error', `No match: ${normalized}`); else toast(`No student matches code "${normalized}".`,'error');
-      return;
+    const assignment=(state._assignments||[]).find(a=>a.id===assignmentId);
+    if(!assignment){throw new Error('Assignment not found. Refresh the assignments list.');}
+    let student=state.students.find(s=>String(s.roll_no).toLowerCase()===normalized.toLowerCase());
+    if(!student){
+      await refreshOneStudent(normalized);
+      student=state.students.find(s=>String(s.roll_no).toLowerCase()===normalized.toLowerCase());
     }
-    const student = rows[0];
-    const asn=(state._assignments||[]).find(a=>a.id===state.openAssignmentId);
-    if(!canViewStudent(student)||(asn?.batch_id && !isMemberOfBatch(student,asn.batch_id))){const msg='Student is outside the assignment batch or your permitted batch.';if(viaCamera)showAsnFeedback('error',msg);else toast(msg,'error');return;}
-    await sbRpc('record_assignment_scan', { p_assignment_id: state.openAssignmentId, p_roll_no: student.roll_no });
-    buzz(60);
-    assignmentSessionResolved.add(key);
-    if (viaCamera){
-      if (!state._assignmentRecords) state._assignmentRecords = [];
-      state._assignmentRecords.unshift({ id:'local-'+Date.now(), assignment_id: state.openAssignmentId, student_id: student.id, recorded_by_name: state.user.name, created_at: new Date().toISOString(), students:{ roll_no: student.roll_no, name: student.name } });
-       assignmentSessionCount++;
-       state.assignmentCounts[state.openAssignmentId]=(state.assignmentCounts[state.openAssignmentId]||0)+1;
-       const totalEl=document.getElementById('assignment-recipient-count');if(totalEl)totalEl.textContent=state.assignmentCounts[state.openAssignmentId];
-      const counterEl = document.getElementById('asn-session-counter'); if (counterEl) counterEl.textContent = assignmentSessionCount;
-      showAsnFeedback('success', student.name);
-    } else {
-      toast(`✓ ${student.name} recorded.`,'success');
-      Promise.all([loadAssignmentRecords(state.openAssignmentId),loadAssignmentCounts()]).then(([list])=>{state._assignmentRecords=list;update();});
+    if(!student){
+      throw new Error(`No accessible student found for roll number ${normalized}.`);
     }
+    // Memberships may have changed since login. Refresh only on an eligibility
+    // failure; normal scanning remains fast and works without a full reload.
+    let eligibility=assignmentStudentEligibility(student,assignment);
+    if(!eligibility.allowed){
+      await loadStudentBatchMemberships();
+      eligibility=assignmentStudentEligibility(student,assignment);
+    }
+    if(!eligibility.allowed)throw new Error(eligibility.message);
+    // The server RPC must independently enforce the very same checks. A
+    // browser-side check is never an authorization boundary.
+    await sbRpc('record_assignment_scan',{p_assignment_id:assignmentId,p_roll_no:student.roll_no});
+    buzz(60);assignmentSessionResolved.add(key);
+    if(state.openAssignmentId!==assignmentId)return true;
+    if(viaCamera){
+      if(!state._assignmentRecords)state._assignmentRecords=[];
+      state._assignmentRecords.unshift({id:'local-'+Date.now(),assignment_id:assignmentId,student_id:student.id,recorded_by_name:state.user.name,created_at:new Date().toISOString(),students:{roll_no:student.roll_no,name:student.name}});
+      assignmentSessionCount++;
+      state.assignmentCounts[assignmentId]=(state.assignmentCounts[assignmentId]||0)+1;
+      const totalEl=document.getElementById('assignment-recipient-count');if(totalEl)totalEl.textContent=state.assignmentCounts[assignmentId];
+      const counterEl=document.getElementById('asn-session-counter');if(counterEl)counterEl.textContent=assignmentSessionCount;
+      showAsnFeedback('success',student.name);
+    }else{
+      toast(`${student.name} recorded for assignment.`,'success');
+      Promise.all([loadAssignmentRecords(assignmentId),loadAssignmentCounts()]).then(([list])=>{if(state.openAssignmentId===assignmentId){state._assignmentRecords=list;update();}});
+    }
+    return true;
   }catch(e){
     buzz([30,30,30]);
-    if (/already been recorded/i.test(e.message||'')) assignmentSessionResolved.add(key);
-    else assignmentErrorCooldown[key] = Date.now();
-    if (viaCamera) showAsnFeedback('error', e.message); else toast(e.message,'error');
+    if(/already been recorded/i.test(e.message||''))assignmentSessionResolved.add(key);
+    else assignmentErrorCooldown[key]=Date.now();
+    if(viaCamera)showAsnFeedback('error',e.message);else toast(e.message,'error');
+    return false;
   }
 }
+
 let asnFeedbackTimer = null;
 function showAsnFeedback(type, text){
   const holder = document.getElementById('asn-feedback-holder');
@@ -4659,7 +4705,7 @@ function qsStatus(msg){const el=document.getElementById('qs-status');if(el)el.te
 async function openQuickScan(){
   if(quickScan.open||!state.user||state.view!=='app')return;
   if(state.scanning){await stopCamera();state.scanning=false;update();}
-  quickScan.open=true;quickScan.mode=quickScanModes()[0]?.id||'lookup';quickScan.busy=false;
+  quickScan.open=true;quickScan.mode=(state.openAssignmentId&&quickScanModes().some(m=>m.id==='assignment'))?'assignment':(quickScanModes()[0]?.id||'lookup');quickScan.busy=false;
   const root=document.getElementById('quick-scan-root');root.innerHTML=quickScanMarkup();
   document.body.style.overflow='hidden';
   await startQuickScanCamera();
@@ -4707,7 +4753,7 @@ async function quickScanDetected(code){
   }
   try{
     if(mode==='attendance'){await markAttendance(roll);qsStatus('');}
-    else if(mode==='assignment'){await recordAssignmentScan(roll);qsStatus('');}
+    else if(mode==='assignment'){const saved=await recordAssignmentScan(roll);qsStatus(saved?'Assignment recorded.':'Assignment not recorded. See the error message.');}
   }finally{quickScan.busy=false;}
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&quickScan.open){e.stopPropagation();void closeQuickScan();}});
