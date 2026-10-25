@@ -447,8 +447,10 @@ a{color:var(--primary);}
 
 /* Global mobile quick-scan control; lives outside #app to keep the camera mounted. */
 #quick-scan-root{position:relative;z-index:95;}
-.qs-fab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:90;border:0;border-radius:999px;background:#4F46E5;color:#fff;box-shadow:0 6px 24px #171d3970;padding:12px 18px;font-weight:800;display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;touch-action:manipulation;}
-.qs-fab .qs-up{font-size:19px;line-height:1;}
+.qs-fab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:90;border:0;border-radius:50%;background:#4F46E5;color:#fff;box-shadow:0 5px 16px #171d3950;width:46px;height:46px;padding:0;display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;transition:transform .12s,box-shadow .12s;}
+.qs-fab:hover{box-shadow:0 6px 19px #171d3970;transform:translateY(-1px);}
+.qs-fab:focus-visible{outline:3px solid #A5B4FC;outline-offset:3px;}
+.qs-fab svg{width:22px;height:22px;display:block;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round;}
 .qs-shade{position:fixed;inset:0;background:#0b1020a8;z-index:95;}
 .qs-sheet{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-radius:22px 22px 0 0;padding:14px 18px calc(22px + env(safe-area-inset-bottom));z-index:96;max-width:560px;margin:0 auto;max-height:92dvh;overflow:auto;box-shadow:0 -8px 45px #0003;}
 .qs-grip{width:46px;height:5px;background:var(--border);border-radius:9px;margin:0 auto 14px;}
@@ -486,7 +488,6 @@ const HARDCODED_SUPABASE_URL = 'https://dthsknsixkyyrkvfvtzi.supabase.co';
 const HARDCODED_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0aHNrbnNpeGt5eXJrdmZ2dHppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNjUyMDcsImV4cCI6MjA5Nzg0MTIwN30.gPmmlpdlxVc-FI7FrcBmkEPCE-ASS6-2Y-9_Q3mPpYA';
 const ID_CARD_HINDI_TITLE = 'विद्या ग्राम छात्रावास';
 const ID_CARD_DEFAULT_ADDRESS = 'Hasadih (Masaurhi) Patna';
-
 
 /* ============================================================
    STATE
@@ -814,15 +815,15 @@ function renderBatchSelector(){
   if (!state.user || state.view!=='app') return '';
   const list=availableBatches();
   if(state.user.role!=='admin' && !list.length) return '<span class="badge badge-student_archive">No batches assigned</span>';
-  return `<select class="select-sm batch-selector" title="Show students from this batch only" aria-label="Active batch" onchange="setSelectedBatch(this.value)">
-    ${state.user.role==='admin'?`<option value="" ${!state.selectedBatchId?'selected':''}>All batches</option>`:''}
+  return `<select class="select-sm batch-selector" title="Filter students by batch" aria-label="Batch filter" onchange="setSelectedBatch(this.value)">
+    ${(state.user.role==='admin'||state.user.role==='accountant')?`<option value="" ${!state.selectedBatchId?'selected':''}>All batches</option>`:''}
     ${list.map(b=>`<option value="${esc(b.id)}" ${state.selectedBatchId===b.id?'selected':''}>${esc(b.name)}</option>`).join('')}
   </select>`;
 }
 function setSelectedBatch(id){
   const allowed=availableBatches();
   if(id && !allowed.some(b=>b.id===id)){ toast('Batch not available for this account.','error'); return; }
-  if(!id && state.user.role!=='admin') return;
+  if(!id && state.user.role!=='admin' && state.user.role!=='accountant') return;
   if(state.scanning) stopCamera();
   state.selectedBatchId=id||'';
   state.scanning=false;state.openAssignmentId=null;state.openAssignmentName=null;
@@ -837,8 +838,11 @@ function setSelectedBatch(id){
 function chooseInitialBatch(){
   if(!state.user) return;
   const ids=availableBatches().map(b=>b.id);
-  if(state.user.role==='admin') { if(state.selectedBatchId&&!ids.includes(state.selectedBatchId)) state.selectedBatchId=''; }
-  else if(!ids.includes(state.selectedBatchId)) state.selectedBatchId=ids[0]||'';
+  if(state.user.role==='admin'||state.user.role==='accountant'){
+    // The initial view is All Batches for accountants; only assigned batches
+    // are visible because canAccessStudent() and RLS enforce authorization.
+    if(state.selectedBatchId&&!ids.includes(state.selectedBatchId)) state.selectedBatchId='';
+  }else if(!ids.includes(state.selectedBatchId)) state.selectedBatchId=ids[0]||'';
 }
 
 function computeStats(){
@@ -2077,9 +2081,18 @@ function deleteBatch(id){
 }
 function onBatchChange(){ applyBatchFeeAmount(); }
 function onPrimaryBatchFormChange(){
+  const selected=document.getElementById('f-batch')?.value || '';
+  const modal=state.modal;
+  const previous=modal?.type==='studentForm' ? modal.preferredBatchId : '';
+  // On a new registration a previously automatic primary checkbox must not
+  // silently turn into an extra batch when the operator changes the choice.
+  document.querySelectorAll('[data-student-batch]').forEach(el=>{
+    if(!modal?.existing && previous && previous!==selected && el.dataset.studentBatch===previous) el.checked=false;
+    if(el.dataset.studentBatch===selected){el.checked=true;el.disabled=true;}
+    else el.disabled=false;
+  });
+  if(modal?.type==='studentForm')modal.preferredBatchId=selected;
   applyBatchFeeAmount();
-  const selected=document.getElementById('f-batch')?.value;
-  document.querySelectorAll('[data-student-batch]').forEach(el=>{ if(el.dataset.studentBatch===selected){el.checked=true;el.disabled=true;}else{el.disabled=false;} });
 }
 function onOnlinePaidChange(){
   const amount = parseFloat(document.getElementById('f-online-paid').value)||0;
@@ -2089,10 +2102,15 @@ function onOnlinePaidChange(){
 function applyBatchFeeAmount(){
   const batchId = document.getElementById('f-batch').value;
   const batch = state.batches.find(b=>b.id===batchId);
-  if (!batch) return;
+  if(!batch){
+    if(state.modal?.type==='studentForm'&&!state.modal.existing){
+      const fee=document.getElementById('f-feetotal');if(fee)fee.value='';
+    }
+    return;
+  }
   const mode = document.getElementById('f-feemode').value;
   const amount = mode==='monthly' ? batch.monthly_fee_amount : batch.onetime_fee_amount;
-  if (amount) document.getElementById('f-feetotal').value = amount;
+  if(amount != null && Number.isFinite(Number(amount)))document.getElementById('f-feetotal').value=amount;
 }
 
 /* ---------- Bulk-assign existing students to a batch ---------- */
@@ -2156,8 +2174,9 @@ function openStudentForm(rollNo){
   if(!rollNo && state.user.role!=='admin' && !accessibleBatches.length){
     toast('No active batch assigned. Ask the administrator to grant batch access.','error');return;
   }
-  const preferredBatchId=existing?.batch_id || (
-    accessibleBatches.some(b=>b.id===state.selectedBatchId) ? state.selectedBatchId : (accessibleBatches[0]?.id||''));
+  // Never auto-assign a newly registered student to a batch just because
+  // it was selected in the list filter (or happens to sort first).
+  const preferredBatchId=existing?.batch_id || '';
   const contacts = existing ? parseContacts(existing.contacts) : [];
   const defaults = contacts.length ? contacts : [{label:'Student',phone:''},{label:'Guardian',phone:''}];
   state.modal = { type:'studentForm', existing, originalRollNo: rollNo, contacts: defaults, preferredBatchId };
@@ -2213,8 +2232,8 @@ function studentFormModalHTML(existing, contacts){
           <option value="female" ${s.gender==='female'?'selected':''}>Female</option>
           <option value="other" ${s.gender==='other'?'selected':''}>Other</option>
         </select></label>
-        <label>Primary batch (controls fee schedule)<select id="f-batch" onchange="onPrimaryBatchFormChange()">
-          <option value="">— None —</option>
+        <label>Primary batch (required for new students)<select id="f-batch" ${existing?'':'required'} onchange="onPrimaryBatchFormChange()">
+          <option value="">— Select batch —</option>
           ${state.batches.filter(b=>(!b.is_archived && (state.user.role==='admin'||userBatchIds().includes(b.id)))||primaryId===b.id).map(b=>`<option value="${escAttr(b.id)}" ${primaryId===b.id?'selected':''}>${esc(b.name)}</option>`).join('')}
         </select></label>
         <label>Father's name<input id="f-father" value="${esc(s.father_name||'')}" /></label>
@@ -2293,6 +2312,7 @@ async function submitStudentForm(){
   const photoFile = document.getElementById('f-photo').files[0] || null;
   const contacts = (state.modal.contacts||[]).filter(c=>c.phone && c.phone.trim()).map(c=>({ label: toTitleCase((c.label||'').trim()) || 'Contact', phone: c.phone.trim() }));
   if(!rollNo || !name){ toast('Roll number and name are required.','error'); return; }
+  if(!originalRollNo && !batchId){toast('Select a primary batch before registering the student.','error');document.getElementById('f-batch')?.focus();return;}
   if(state.user.role!=='admin' && (!batchId || (batchId!==state.modal.existing?.batch_id && !userBatchIds().includes(batchId)))){toast('Choose a primary batch you have access to.','error');return;}
 
   let cashPaid=0, onlinePaid=0, initUid='', initBank='';
@@ -2380,8 +2400,8 @@ async function actuallySubmitStudent({ rollNo, name, payload, originalRollNo, ph
     refresh.forEach((r,i)=>{if(r.status==='rejected')warnings.push(['Student refresh','Activity refresh','Financial refresh'][i]+': '+r.reason?.message);});
     if(originalRollNo){closeModal();}
     else{
-      const nextPreferredBatchId=payload.batch_id||state.selectedBatchId||'';
-      state.modal={type:'studentForm',existing:null,originalRollNo:null,preferredBatchId:nextPreferredBatchId,
+      // The next student must explicitly choose their own batch too.
+      state.modal={type:'studentForm',existing:null,originalRollNo:null,preferredBatchId:'',
         contacts:[{label:'Student',phone:''},{label:'Guardian',phone:''}]};
       update();
       const rollInput=document.getElementById('f-rollno');if(rollInput)rollInput.focus();
@@ -4684,9 +4704,13 @@ function quickScanModes(){
 }
 function syncQuickScan(){
   const root=document.getElementById('quick-scan-root');if(!root)return;
-  if(state.view!=='app'||!state.user){if(quickScan.open)closeQuickScan();root.innerHTML='';return;}
+  // Registration and student editing need an unobstructed Save/Cancel area.
+  if(state.view!=='app'||!state.user||state.modal?.type==='studentForm'){
+    if(quickScan.open)void closeQuickScan();
+    root.innerHTML='';return;
+  }
   if(quickScan.open)return;
-  root.innerHTML='<button type="button" class="qs-fab" aria-label="Open quick scanner" onclick="openQuickScan()" ontouchstart="quickScanTouchStart(event)" ontouchend="quickScanTouchEnd(event)"><span class="qs-up">⌃</span><span>Scan</span><span aria-hidden="true">▣</span></button>';
+  root.innerHTML='<button type="button" class="qs-fab" title="Quick Scan" aria-label="Open quick scanner" onclick="openQuickScan()" ontouchstart="quickScanTouchStart(event)" ontouchend="quickScanTouchEnd(event)"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 3H5a2 2 0 0 0-2 2v2M17 3h2a2 2 0 0 1 2 2v2M3 17v2a2 2 0 0 0 2 2h2M21 17v2a2 2 0 0 1-2 2h-2M7 12h10"/></svg></button>';
 }
 function quickScanMarkup(){
   const modes=quickScanModes();
@@ -4703,7 +4727,7 @@ function quickScanTouchStart(e){quickScanTouchY=e.changedTouches?.[0]?.clientY??
 function quickScanTouchEnd(e){const y=e.changedTouches?.[0]?.clientY??null;if(quickScanTouchY!==null&&y!==null&&quickScanTouchY-y>35){e.preventDefault();void openQuickScan();}quickScanTouchY=null;}
 function qsStatus(msg){const el=document.getElementById('qs-status');if(el)el.textContent=msg;}
 async function openQuickScan(){
-  if(quickScan.open||!state.user||state.view!=='app')return;
+  if(quickScan.open||!state.user||state.view!=='app'||state.modal?.type==='studentForm')return;
   if(state.scanning){await stopCamera();state.scanning=false;update();}
   quickScan.open=true;quickScan.mode=(state.openAssignmentId&&quickScanModes().some(m=>m.id==='assignment'))?'assignment':(quickScanModes()[0]?.id||'lookup');quickScan.busy=false;
   const root=document.getElementById('quick-scan-root');root.innerHTML=quickScanMarkup();
